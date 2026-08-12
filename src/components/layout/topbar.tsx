@@ -1,6 +1,7 @@
 "use client";
 
-import { Search, Bell, Settings } from "lucide-react";
+import { Search, Settings } from "lucide-react";
+import { NotificationsDropdown } from "./notifications-dropdown";
 
 export function TopBar() {
   return (
@@ -14,16 +15,7 @@ export function TopBar() {
         />
       </label>
 
-      <button
-        type="button"
-        aria-label="Notifications"
-        className="relative flex size-10 items-center justify-center rounded-[10px] border border-[#ececed]"
-      >
-        <Bell size={18} className="text-black" />
-        <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full border-[0.3px] border-[#e0e0e3] bg-brand-red text-[9px] font-medium text-white">
-          1
-        </span>
-      </button>
+      <NotificationsDropdown />
 
       <button
         type="button"
