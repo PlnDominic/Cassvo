@@ -11,7 +11,7 @@ const categories = [
 
 export function CategoryPerformanceCard() {
   return (
-    <div className="w-[405px] shrink-0 rounded-[10px] bg-white p-5 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.08)]">
+    <div className="w-full rounded-[10px] bg-white p-5 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.08)]">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-xs font-medium tracking-[0.01em] text-[#060606]">Category Performance</p>
         <button

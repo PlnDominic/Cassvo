@@ -12,7 +12,7 @@ const businesses = [
 
 export function TrendingBusinessesCard() {
   return (
-    <div className="w-[324px] shrink-0 rounded-[10px] bg-white p-4 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.08)]">
+    <div className="w-full rounded-[10px] bg-white p-4 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.08)]">
       <p className="mb-4 text-xs font-medium tracking-[0.01em] text-[#060606]">Trending Businesses</p>
       <div className="flex flex-col gap-4">
         {businesses.map((b, i) => (

@@ -39,7 +39,7 @@ export default function DashboardPage() {
           <TrustScoreCard />
         </div>
 
-        <div className="flex flex-wrap items-start gap-6">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
           <TrendingBusinessesCard />
           <ReviewsMapCard />
           <CategoryPerformanceCard />
