@@ -35,7 +35,10 @@ const contactInfo = [
 ];
 
 const about =
-  "Sky Lounge is a sophisticated lounge in the Greater Accra region of Ghana. Specifically located at Osu. We are known for or excellence in customer service, clean environments and …";
+  "Sky Lounge is a sophisticated lounge in the Greater Accra region of Ghana. Specifically located at Osu\nWe are known for or excellence in customer service, clean environments and …";
+
+const address = "15 Third Street Osu, Accra";
+const mapQuery = "15 Third Street, Osu, Accra, Ghana";
 
 const businessInfoData: BusinessInfoData = {
   legalName: "Sky Lounge Ventures Ltd.",
@@ -94,7 +97,7 @@ export default async function BusinessProfilePage({ params }: { params: Promise<
         <InfoBar items={contactInfo} />
 
         <ProfileTabs
-          overview={<OverviewTab about={about} />}
+          overview={<OverviewTab about={about} address={address} mapQuery={mapQuery} />}
           photos={<PhotosTab photos={[skyLounge, photoBusiness1, photoBusiness2, skyLounge, photoBusiness1, photoBusiness2]} />}
           businessInfo={<BusinessInfoTab info={businessInfoData} />}
           reports={<ReportsTab reports={reports} />}

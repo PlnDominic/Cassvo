@@ -6,12 +6,13 @@ interface Tab {
   key: string;
   label: string;
   count?: number;
+  countClassName?: string;
   danger?: boolean;
 }
 
 const tabs: Tab[] = [
   { key: "overview", label: "Overview" },
-  { key: "photos", label: "Photos", count: 14 },
+  { key: "photos", label: "Photos", count: 14, countClassName: "text-emerald-600" },
   { key: "business-info", label: "Business Info" },
   { key: "reports", label: "Reports", count: 60, danger: true },
 ];
@@ -56,7 +57,13 @@ export function ProfileTabs({
             >
               {tab.label}
               {tab.count !== undefined && (
-                <span className={tab.danger && !isActive ? "text-brand-red" : "text-[#939393]"}>
+                <span
+                  className={
+                    tab.danger && !isActive
+                      ? "text-brand-red"
+                      : (tab.countClassName ?? "text-[#939393]")
+                  }
+                >
                   ({tab.count})
                 </span>
               )}
