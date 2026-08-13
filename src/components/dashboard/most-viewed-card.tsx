@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Trophy } from "lucide-react";
 import skyLounge from "../../../public/images/dashboard/photo-sky-lounge.png";
 import { StarRating } from "../ui/star-rating";
@@ -33,18 +34,18 @@ export function MostViewedCard() {
         </div>
 
         <div className="absolute bottom-4 right-4 flex gap-2">
-          <button
-            type="button"
+          <Link
+            href="/businesses"
             className="rounded-xl bg-brand-red px-5 py-3 text-sm font-medium text-white"
           >
             View Profile
-          </button>
-          <button
-            type="button"
+          </Link>
+          <Link
+            href="/review-moderation"
             className="rounded-xl bg-white px-5 py-3 text-sm font-medium text-brand-red"
           >
             View Reviews
-          </button>
+          </Link>
         </div>
       </div>
     </div>

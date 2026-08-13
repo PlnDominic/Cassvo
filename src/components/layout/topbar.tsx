@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Search, Settings } from "lucide-react";
 import { NotificationsDropdown } from "./notifications-dropdown";
 
@@ -17,13 +18,13 @@ export function TopBar() {
 
       <NotificationsDropdown />
 
-      <button
-        type="button"
+      <Link
+        href="/settings"
         aria-label="Settings"
         className="flex size-10 items-center justify-center rounded-[10px] border border-[#ececed]"
       >
         <Settings size={18} className="text-black" />
-      </button>
+      </Link>
     </div>
   );
 }

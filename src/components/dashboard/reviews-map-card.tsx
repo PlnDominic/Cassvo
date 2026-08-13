@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { ChevronDown, MapPin } from "lucide-react";
+import { PeriodDropdown } from "./period-dropdown";
 
 const cities = [
   { name: "Accra", value: "96%", color: "#ea0505" },
@@ -16,13 +18,7 @@ export function ReviewsMapCard() {
           <span>Reviews in Ghana</span>
           <ChevronDown size={14} />
         </div>
-        <button
-          type="button"
-          className="flex items-center gap-2 rounded-[5px] border border-[#939393]/30 px-3 py-2 text-xs font-medium tracking-[0.01em] text-[#060606]"
-        >
-          This Week
-          <ChevronDown size={14} />
-        </button>
+        <PeriodDropdown />
       </div>
 
       <div className="flex items-center gap-6">
@@ -42,13 +38,13 @@ export function ReviewsMapCard() {
         </div>
       </div>
 
-      <button
-        type="button"
-        className="mx-auto mt-5 flex items-center gap-2 rounded-[5px] border border-[#939393]/30 px-4 py-2 text-xs font-medium tracking-[0.01em] text-[#060606]"
+      <Link
+        href="/analytics"
+        className="mx-auto mt-5 flex w-fit items-center gap-2 rounded-[5px] border border-[#939393]/30 px-4 py-2 text-xs font-medium tracking-[0.01em] text-[#060606]"
       >
         View Full Analysis
         <ChevronDown size={14} />
-      </button>
+      </Link>
     </div>
   );
 }

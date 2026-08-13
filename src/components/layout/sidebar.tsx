@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   MessageSquareCheck,
@@ -53,6 +53,11 @@ function NavLink({
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  function handleLogout() {
+    router.push("/");
+  }
 
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col bg-[#060606] px-5 py-8">
@@ -90,6 +95,7 @@ export function Sidebar() {
             ))}
             <button
               type="button"
+              onClick={handleLogout}
               className="flex h-[41px] w-full items-center gap-[9px] rounded-[10px] px-[10px] text-left text-[16px] font-medium text-white hover:bg-white/5"
             >
               <LogOut size={22} className="shrink-0" />
