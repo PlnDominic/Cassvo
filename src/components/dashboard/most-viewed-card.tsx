@@ -35,7 +35,7 @@ export function MostViewedCard() {
 
         <div className="absolute bottom-4 right-4 flex gap-2">
           <Link
-            href="/businesses"
+            href="/businesses/sky-lounge"
             className="rounded-xl bg-brand-red px-5 py-3 text-sm font-medium text-white"
           >
             View Profile

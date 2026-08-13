@@ -3,12 +3,14 @@ import { Star } from "lucide-react";
 export function StarRating({
   rating,
   count,
+  countSuffix = "",
   size = 14,
   className = "",
   textClassName = "text-[#939393]",
 }: {
   rating: number;
   count?: number;
+  countSuffix?: string;
   size?: number;
   className?: string;
   textClassName?: string;
@@ -26,7 +28,7 @@ export function StarRating({
       </div>
       <span className={`text-sm font-medium tracking-[0.01em] ${textClassName}`}>
         {rating.toFixed(1)}
-        {count !== undefined ? `(${count})` : ""}
+        {count !== undefined ? `(${count}${countSuffix})` : ""}
       </span>
     </div>
   );
