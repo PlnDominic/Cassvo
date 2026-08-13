@@ -41,7 +41,7 @@ export function MostViewedCard() {
             View Profile
           </Link>
           <Link
-            href="/review-moderation"
+            href="/businesses/sky-lounge/reviews"
             className="rounded-xl bg-white px-5 py-3 text-sm font-medium text-brand-red"
           >
             View Reviews

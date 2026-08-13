@@ -59,7 +59,7 @@ const reports: Report[] = [
 ];
 
 export default async function BusinessProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  await params;
+  const { id } = await params;
 
   return (
     <DashboardShell title="Business Profile" backHref="/businesses">
@@ -92,7 +92,7 @@ export default async function BusinessProfilePage({ params }: { params: Promise<
           ]}
         />
 
-        <BusinessHero business={business} reviewsHref="/review-moderation" />
+        <BusinessHero business={business} reviewsHref={`/businesses/${id}/reviews`} />
 
         <InfoBar items={contactInfo} />
 
