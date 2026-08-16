@@ -8,10 +8,12 @@ export function PhotoGallery({
   photos,
   onAdd,
   editable = true,
+  columns = 3,
 }: {
   photos: AdditionalPhoto[];
   onAdd?: (preview: string) => void;
   editable?: boolean;
+  columns?: 2 | 3;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -21,7 +23,7 @@ export function PhotoGallery({
   }
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className={`grid gap-3 ${columns === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
       {photos.map((photo) => (
         <div key={photo.id} className="relative aspect-square overflow-hidden rounded-xl bg-[#f7f7f8]">
           {/* eslint-disable-next-line @next/next/no-img-element -- mix of static assets and user-uploaded blob previews */}
