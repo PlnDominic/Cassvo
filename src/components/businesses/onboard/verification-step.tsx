@@ -1,5 +1,5 @@
-import { FormField } from "./form-field";
-import { ImageUploadBox } from "./image-upload-box";
+import { DocumentList } from "./document-list";
+import { PhotoGallery } from "./photo-gallery";
 import type { OnboardBusinessData } from "./types";
 
 export function VerificationStep({
@@ -9,46 +9,26 @@ export function VerificationStep({
   data: OnboardBusinessData;
   onChange: (patch: Partial<OnboardBusinessData>) => void;
 }) {
+  function removeDocument(id: string) {
+    onChange({ documents: data.documents.filter((doc) => doc.id !== id) });
+  }
+
+  function addPhoto(preview: string) {
+    onChange({ additionalPhotos: [...data.additionalPhotos, { id: crypto.randomUUID(), preview }] });
+  }
+
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
-      <div className="flex flex-col gap-6">
-        <FormField
-          id="legal-name"
-          label="Legal Business Name"
-          placeholder="Sunset Restaurant Ventures Ltd."
-          value={data.legalName}
-          onChange={(e) => onChange({ legalName: e.target.value })}
-        />
-        <FormField
-          id="registration-number"
-          label="Registration Number"
-          placeholder="BN-2021-884213"
-          value={data.registrationNumber}
-          onChange={(e) => onChange({ registrationNumber: e.target.value })}
-        />
-        <FormField
-          id="tax-id"
-          label="Tax ID"
-          placeholder="TIN-C0119284X"
-          value={data.taxId}
-          onChange={(e) => onChange({ taxId: e.target.value })}
-        />
-        <FormField
-          id="date-registered"
-          label="Date Registered"
-          placeholder="1st July, 2021"
-          value={data.dateRegistered}
-          onChange={(e) => onChange({ dateRegistered: e.target.value })}
-        />
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+      <div>
+        <h3 className="text-sm font-medium text-[#060606]">Verification Document</h3>
+        <p className="mb-4 text-xs text-[#939393]">Upload documents to verify this business</p>
+        <DocumentList documents={data.documents} onRemove={removeDocument} />
       </div>
 
-      <div className="flex flex-col gap-6">
-        <ImageUploadBox
-          label="Registration Document"
-          placeholder="Upload registration certificate"
-          preview={data.verificationDocPreview}
-          onChange={(preview) => onChange({ verificationDocPreview: preview })}
-        />
+      <div>
+        <h3 className="text-sm font-medium text-[#060606]">Additional Photos</h3>
+        <p className="mb-4 text-xs text-[#939393]">Add Photos of Businesses ( interior, exterior, products etc )</p>
+        <PhotoGallery photos={data.additionalPhotos} onAdd={addPhoto} />
       </div>
     </div>
   );

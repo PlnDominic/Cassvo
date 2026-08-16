@@ -3,18 +3,36 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
+import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
 import { StepIndicator } from "./step-indicator";
 import { BusinessInfoStep } from "./business-info-step";
 import { DetailsStep } from "./details-step";
 import { VerificationStep } from "./verification-step";
 import { ReviewStep } from "./review-step";
 import { EMPTY_ONBOARD_DATA, type OnboardBusinessData } from "./types";
+import skyLounge from "../../../../public/images/dashboard/photo-sky-lounge.png";
+import photoBusiness1 from "../../../../public/images/dashboard/photo-business-1.png";
+import photoBusiness2 from "../../../../public/images/dashboard/photo-business-2.png";
+
+const STEP_SUBTITLES: Record<number, string> = {
+  1: "Onboard a business",
+  2: "Add more information about the business",
+  3: "Verify the authenticity of the business",
+  4: "Review all information before onboarding",
+};
+
+const INITIAL_DATA: OnboardBusinessData = {
+  ...EMPTY_ONBOARD_DATA,
+  additionalPhotos: [skyLounge.src, photoBusiness1.src, photoBusiness2.src, skyLounge.src, photoBusiness1.src].map(
+    (preview, i) => ({ id: `seed-${i}`, preview })
+  ),
+};
 
 export function OnboardBusinessWizard() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [data, setData] = useState<OnboardBusinessData>(EMPTY_ONBOARD_DATA);
-  const [submitted, setSubmitted] = useState(false);
+  const [data, setData] = useState<OnboardBusinessData>(INITIAL_DATA);
+  const [result, setResult] = useState<"draft" | "verified" | null>(null);
 
   function patch(update: Partial<OnboardBusinessData>) {
     setData((prev) => ({ ...prev, ...update }));
@@ -29,19 +47,19 @@ export function OnboardBusinessWizard() {
   }
 
   function handleNext() {
-    if (step === 4) {
-      setSubmitted(true);
-      return;
-    }
     setStep((s) => s + 1);
   }
 
-  if (submitted) {
+  if (result) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-2xl bg-white p-16 text-center shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
-        <h2 className="text-lg font-medium text-[#060606]">Business submitted for review</h2>
+        <h2 className="text-lg font-medium text-[#060606]">
+          {result === "draft" ? "Saved as draft" : "Business marked as verified"}
+        </h2>
         <p className="max-w-md text-sm text-[#939393]">
-          {data.name || "This business"} has been submitted and is now pending verification.
+          {result === "draft"
+            ? `${data.name || "This business"} has been saved and can be finished later.`
+            : `${data.name || "This business"} has been verified and is now live on Cassvo.`}
         </p>
         <button
           type="button"
@@ -55,32 +73,56 @@ export function OnboardBusinessWizard() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <StepIndicator current={step} />
+    <div className="flex flex-col gap-6">
+      <WelcomeBanner name="Angela. A" initial="A" subtitle={STEP_SUBTITLES[step]} greeting="Hi," />
 
-      <div className="rounded-2xl bg-white p-6 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)] sm:p-8">
-        {step === 1 && <BusinessInfoStep data={data} onChange={patch} />}
-        {step === 2 && <DetailsStep data={data} onChange={patch} />}
-        {step === 3 && <VerificationStep data={data} onChange={patch} />}
-        {step === 4 && <ReviewStep data={data} />}
-      </div>
+      <div className="flex flex-col gap-8">
+        <StepIndicator current={step} />
 
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="rounded-xl border border-[#ececed] bg-white px-6 py-3 text-sm font-medium text-[#060606]"
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          className="flex items-center gap-1.5 rounded-xl bg-brand-red px-6 py-3 text-sm font-medium text-white"
-        >
-          {step === 4 ? "Submit" : "Next"}
-          <ChevronRight size={16} />
-        </button>
+        <div className="rounded-2xl bg-white p-6 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)] sm:p-8">
+          {step === 1 && <BusinessInfoStep data={data} onChange={patch} />}
+          {step === 2 && <DetailsStep data={data} onChange={patch} />}
+          {step === 3 && <VerificationStep data={data} onChange={patch} />}
+          {step === 4 && <ReviewStep data={data} />}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="rounded-xl border border-[#ececed] bg-white px-6 py-3 text-sm font-medium text-[#060606]"
+          >
+            Back
+          </button>
+
+          {step === 4 ? (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setResult("draft")}
+                className="rounded-xl bg-[#f2f2f3] px-6 py-3 text-sm font-medium text-[#939393]"
+              >
+                Save as Draft
+              </button>
+              <button
+                type="button"
+                onClick={() => setResult("verified")}
+                className="rounded-xl bg-brand-red px-6 py-3 text-sm font-medium text-white"
+              >
+                Mark as Verified & Preview
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleNext}
+              className="flex items-center gap-1.5 rounded-xl bg-brand-red px-6 py-3 text-sm font-medium text-white"
+            >
+              Next
+              <ChevronRight size={16} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

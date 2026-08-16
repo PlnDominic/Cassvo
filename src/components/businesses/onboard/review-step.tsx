@@ -1,49 +1,75 @@
+import { DocumentList } from "./document-list";
+import { PhotoGallery } from "./photo-gallery";
 import type { OnboardBusinessData } from "./types";
 
-function Field({ label, value }: { label: string; value: string }) {
+const PRICE_LEVEL: Record<string, number> = { Budget: 1, Moderate: 2, Premium: 3, Luxury: 4 };
+
+function PreviewBox({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
+    <div className="rounded-xl border border-[#ececed] bg-white p-4">
       <p className="mb-1 text-xs text-[#939393]">{label}</p>
-      <p className="text-sm font-medium text-[#060606]">{value || "–"}</p>
+      <div className="text-sm font-medium text-[#060606]">{children}</div>
     </div>
   );
 }
 
 export function ReviewStep({ data }: { data: OnboardBusinessData }) {
   return (
-    <div className="flex flex-col gap-8">
-      <section>
-        <h3 className="mb-4 text-sm font-medium text-[#060606]">Business Info</h3>
-        <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Business Name" value={data.name} />
-          <Field label="Category" value={data.category} />
-          <Field label="Business Type" value={data.businessType} />
-          <Field label="Description" value={data.description} />
-        </div>
-      </section>
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+      <div>
+        <h3 className="mb-4 text-sm font-medium text-[#060606]">Business Preview</h3>
+        <div className="flex flex-col gap-4">
+          <PreviewBox label="Business Name">{data.name || "–"}</PreviewBox>
+          <PreviewBox label="Category">{data.category || "–"}</PreviewBox>
+          <PreviewBox label="Business Type">{data.businessType || "–"}</PreviewBox>
+          <PreviewBox label="Description">{data.description || "–"}</PreviewBox>
 
-      <section className="border-t border-[#ececed] pt-6">
-        <h3 className="mb-4 text-sm font-medium text-[#060606]">Details</h3>
-        <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Address" value={data.address} />
-          <Field label="City" value={data.city} />
-          <Field label="Region" value={data.region} />
-          <Field label="Phone" value={data.phone} />
-          <Field label="Email" value={data.email} />
-          <Field label="Website" value={data.website} />
-          <Field label="Open Hours" value={data.openHours} />
-        </div>
-      </section>
+          <div className="rounded-xl border border-[#ececed] bg-white p-4">
+            <p className="mb-3 text-xs text-[#939393]">More details</p>
+            <div className="grid grid-cols-2 gap-4 text-sm font-medium text-[#060606]">
+              <div className="flex flex-col gap-1.5">
+                <span>{data.phone || "–"}</span>
+                <span>{data.email || "–"}</span>
+                <span>{data.businessAddress || "–"}</span>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span>{data.operatingHours || "–"}</span>
+                <span className="flex items-center gap-1">
+                  Price <span className="text-base">{"¢".repeat(PRICE_LEVEL[data.price] ?? 1)}</span>
+                </span>
+              </div>
+            </div>
+          </div>
 
-      <section className="border-t border-[#ececed] pt-6">
-        <h3 className="mb-4 text-sm font-medium text-[#060606]">Verification</h3>
-        <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Legal Business Name" value={data.legalName} />
-          <Field label="Registration Number" value={data.registrationNumber} />
-          <Field label="Tax ID" value={data.taxId} />
-          <Field label="Date Registered" value={data.dateRegistered} />
+          <div className="flex gap-3">
+            <div className="flex h-[100px] w-[100px] shrink-0 items-center justify-center rounded-xl border border-[#ececed] bg-[#f7f7f8] text-xs font-medium text-[#939393]">
+              {data.logoImagePreview ? (
+                // eslint-disable-next-line @next/next/no-img-element -- user-uploaded blob preview
+                <img src={data.logoImagePreview} alt="Logo" className="size-full rounded-xl object-cover" />
+              ) : (
+                "Logo"
+              )}
+            </div>
+            <div className="h-[100px] flex-1 overflow-hidden rounded-xl bg-[#f7f7f8]">
+              {data.coverImagePreview && (
+                // eslint-disable-next-line @next/next/no-img-element -- user-uploaded blob preview
+                <img src={data.coverImagePreview} alt="Cover" className="size-full object-cover" />
+              )}
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
+
+      <div className="flex flex-col gap-8">
+        <div>
+          <h3 className="mb-4 text-sm font-medium text-[#060606]">Verification Document</h3>
+          <DocumentList documents={data.documents} />
+        </div>
+        <div>
+          <h3 className="mb-4 text-sm font-medium text-[#060606]">Additional Photos</h3>
+          <PhotoGallery photos={data.additionalPhotos} editable={false} />
+        </div>
+      </div>
     </div>
   );
 }
