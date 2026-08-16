@@ -14,12 +14,12 @@ export function BusinessesToolbar() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          className="rounded-xl bg-[#f2f2f3] px-5 py-2.5 text-sm font-medium text-[#939393]"
+        <Link
+          href="/businesses/drafts"
+          className="rounded-xl bg-[#f2f2f3] px-5 py-2.5 text-sm font-medium text-[#939393] hover:text-[#060606]"
         >
           Drafts
-        </button>
+        </Link>
         <Link
           href="/businesses/new"
           className="flex items-center gap-2 rounded-xl bg-brand-red px-5 py-2.5 text-sm font-medium text-white"
