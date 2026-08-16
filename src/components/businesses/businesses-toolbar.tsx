@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import { FilterDropdown } from "../reviews/filter-dropdown";
 
-export function BusinessesToolbar({ onAddBusiness }: { onAddBusiness: () => void }) {
+export function BusinessesToolbar() {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-3">
@@ -19,14 +20,13 @@ export function BusinessesToolbar({ onAddBusiness }: { onAddBusiness: () => void
         >
           Drafts
         </button>
-        <button
-          type="button"
-          onClick={onAddBusiness}
+        <Link
+          href="/businesses/new"
           className="flex items-center gap-2 rounded-xl bg-brand-red px-5 py-2.5 text-sm font-medium text-white"
         >
           <Plus size={16} />
           Add Business
-        </button>
+        </Link>
       </div>
     </div>
   );

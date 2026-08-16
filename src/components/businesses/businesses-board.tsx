@@ -49,7 +49,7 @@ export function BusinessesBoard({
 
       <div className="flex flex-col gap-4">
         <BusinessTabs active={tab} onChange={setTab} counts={counts} />
-        <BusinessesToolbar onAddBusiness={() => {}} />
+        <BusinessesToolbar />
         <BusinessesTable businesses={filtered} />
       </div>
     </div>
