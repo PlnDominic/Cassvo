@@ -5,10 +5,12 @@ export function WelcomeBanner({
   name,
   initial,
   subtitle,
+  greeting = "Welcome",
 }: {
   name: string;
   initial: string;
   subtitle: string;
+  greeting?: string;
 }) {
   return (
     <div className="relative flex items-center gap-5 overflow-hidden rounded-2xl bg-[#0b0b0c] px-6 py-6">
@@ -18,7 +20,9 @@ export function WelcomeBanner({
         {initial}
       </div>
       <div className="relative z-10">
-        <h2 className="text-lg font-medium text-white">Welcome {name}</h2>
+        <h2 className="text-lg font-medium text-white">
+          {greeting} {name}
+        </h2>
         <p className="text-sm text-white/70">{subtitle}</p>
       </div>
     </div>
