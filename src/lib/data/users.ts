@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { UserRow, UserCategory } from "@/components/users/types";
-import { formatShortDate } from "@/lib/format";
+import { formatShortDate, formatRelative } from "@/lib/format";
 import { one } from "./util";
 
 export async function getUsers(): Promise<UserRow[]> {
@@ -168,10 +168,52 @@ export async function getMemberReviews(memberId: string): Promise<MemberReview[]
 }
 
 /**
- * Reports filed against a member require the real `review_reports` /
- * `problem_reports` tables, whose columns aren't reconciled yet (both are
- * currently empty, so their shape can't be inspected without write access).
+ * The real schema has no way to report a member directly — only a review
+ * or a general problem. This shows reports this member has *filed*
+ * instead (the one real relationship that exists), with the "reporter"
+ * column repurposed to show what was reported, since repeating the
+ * member's own name in every row would be redundant here.
  */
-export async function getMemberReports(_memberId: string) {
-  return [];
+export async function getMemberReports(memberId: string) {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const [reviewReports, problemReports] = await Promise.all([
+    supabase
+      .from("review_reports")
+      .select("reason, created_at, review:reviews!review_id (business:businesses!business_id (name))")
+      .eq("reporter_id", memberId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("problem_reports")
+      .select("message, created_at")
+      .eq("user_id", memberId)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  if (reviewReports.error) console.error("getMemberReports (review_reports):", reviewReports.error.message);
+  if (problemReports.error) console.error("getMemberReports (problem_reports):", problemReports.error.message);
+
+  const rows = [
+    ...(reviewReports.data ?? []).map((row) => {
+      const review = one<{ business: { name: string } | { name: string }[] | null }>(row.review);
+      const business = review ? one<{ name: string }>(review.business) : null;
+      return {
+        createdAt: row.created_at,
+        reporter: business ? `Review for ${business.name}` : "Review",
+        reason: row.reason,
+        date: formatRelative(row.created_at),
+      };
+    }),
+    ...(problemReports.data ?? []).map((row) => ({
+      createdAt: row.created_at,
+      reporter: "General Feedback",
+      reason: row.message,
+      date: formatRelative(row.created_at),
+    })),
+  ];
+
+  return rows
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .map(({ reporter, reason, date }) => ({ reporter, reason, date }));
 }

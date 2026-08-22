@@ -1,13 +1,12 @@
 import { Avatar } from "../../dashboard/avatar";
-import type { ReportDetailData } from "./types";
+import type { ReportDetail } from "@/lib/data/reports";
 
-export function ReportMetaRow({ report }: { report: ReportDetailData }) {
+export function ReportMetaRow({ report }: { report: ReportDetail }) {
   const items: { label: string; value: string }[] = [
-    { label: "Report Reason", value: report.reason },
-    { label: "Reported By", value: report.reportedByName },
-    { label: "Against", value: report.against },
-    { label: "Total Reports", value: report.totalReports },
-    { label: "Current Status", value: report.currentStatus },
+    { label: report.kind === "review" ? "Report Reason" : "Message", value: report.reason },
+    { label: "Reported By", value: report.reporterName },
+    ...(report.businessName ? [{ label: "Against", value: report.businessName }] : []),
+    ...(report.contactEmail ? [{ label: "Contact Email", value: report.contactEmail }] : []),
   ];
 
   return (
@@ -17,7 +16,7 @@ export function ReportMetaRow({ report }: { report: ReportDetailData }) {
           <Avatar name={item.value} size={36} />
           <div>
             <p className="text-sm font-medium text-[#060606]">{item.label}</p>
-            <p className="text-xs text-[#939393]">{item.value}</p>
+            <p className="max-w-xs truncate text-xs text-[#939393]">{item.value}</p>
           </div>
         </div>
       ))}

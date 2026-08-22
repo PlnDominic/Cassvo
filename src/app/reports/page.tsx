@@ -18,8 +18,8 @@ export default async function ReportsPage() {
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <StatCard label="Total Reports" value={formatNumber(counts.total)} />
-          <StatCard label="Resolved Reports" value={formatNumber(counts.resolved)} iconColor="green" />
-          <StatCard label="Pending" value={formatNumber(counts.pending)} />
+          <StatCard label="Review Reports" value={formatNumber(counts.reviewReports)} />
+          <StatCard label="Problem Reports" value={formatNumber(counts.problemReports)} iconColor="green" />
         </div>
 
         <ReportsToolbar />

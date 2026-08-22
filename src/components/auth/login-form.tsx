@@ -7,6 +7,7 @@ import { TextField } from "@/components/ui/text-field";
 import { GoogleIcon } from "@/components/icons/google-icon";
 import { RuleLine } from "@/components/icons/rule-line";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { recordLoginSession } from "@/lib/auth/record-login";
 
 export function LoginForm() {
   const router = useRouter();
@@ -35,6 +36,8 @@ export function LoginForm() {
       setError(signInError.message === "Invalid login credentials" ? "Incorrect email or password." : signInError.message);
       return;
     }
+
+    await recordLoginSession(supabase);
 
     router.push("/dashboard");
     router.refresh();

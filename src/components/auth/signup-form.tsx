@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { TextField } from "@/components/ui/text-field";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { recordLoginSession } from "@/lib/auth/record-login";
 
 export function SignUpForm() {
   const router = useRouter();
@@ -56,6 +57,7 @@ export function SignUpForm() {
     // returns no session yet — the account exists but can't sign in
     // until the confirmation link is clicked.
     if (data.session) {
+      await recordLoginSession(supabase);
       router.push("/dashboard");
       router.refresh();
     } else {
