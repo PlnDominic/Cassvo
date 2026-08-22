@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -96,9 +97,14 @@ export function Sidebar({
       >
         <div className="mb-10 flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
-            <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" aria-hidden>
-              <circle cx="12" cy="12" r="11" fill="none" stroke="#ea0505" strokeWidth="3" strokeDasharray="52 17" strokeLinecap="round" transform="rotate(-45 12 12)" />
-            </svg>
+            <Image
+              src="/images/brand/cassvo-logo.png"
+              alt="Cassvo"
+              width={28}
+              height={28}
+              className="h-7 w-7 shrink-0"
+              priority
+            />
             <span className="text-xl font-medium text-white">Cassvo</span>
           </div>
           <button
