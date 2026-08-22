@@ -77,8 +77,10 @@ function toRecord(row: any): ReviewRecord {
     id: row.id,
     authorName: author?.full_name ?? "Unknown",
     authorLocation: author?.location || null,
-    // The real schema has no per-review "verified" flag on the author —
-    // only the review itself carries `is_verified`.
+    // is_verified is the review's own approval flag (confirmed against
+    // real data: every review that predates the moderation dashboard has
+    // is_verified=true alongside is_pending=false) — not an author
+    // identity flag, despite the field name here. Approve sets it true.
     authorVerified: row.is_verified ?? false,
     authorAvatarUrl: author?.avatar_url ?? null,
     timeAgo: formatRelative(row.created_at),
