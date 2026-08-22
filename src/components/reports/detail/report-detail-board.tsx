@@ -7,6 +7,7 @@ import { ReportMetaRow } from "./report-meta-row";
 import { EvidenceCard } from "./evidence-card";
 import { UploadedEvidenceCard } from "./uploaded-evidence-card";
 import { ModerationPanel } from "./moderation-panel";
+import { ReportQuickActions } from "./report-quick-actions";
 import type { ReportDetailData } from "./types";
 import type { ReportStatus } from "../types";
 
@@ -42,6 +43,12 @@ export function ReportDetailBoard({ report: initialReport }: { report: ReportDet
         </div>
         <ModerationPanel report={report} />
       </div>
+
+      <ReportQuickActions
+        onApprove={() => updateStatus("resolved", "Review approved")}
+        onRemove={() => updateStatus("resolved", "Review removed")}
+        onEscalate={() => updateStatus("investigating", "Escalated to senior moderator")}
+      />
     </div>
   );
 }
