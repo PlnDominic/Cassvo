@@ -98,6 +98,13 @@ export function LoginForm() {
       >
         {submitting ? "Signing in…" : "Login"}
       </button>
+
+      <p className="text-center text-base font-medium tracking-[0.01em] text-white/70">
+        Don&apos;t have an account?{" "}
+        <Link href="/signup" className="text-brand-red">
+          Sign up
+        </Link>
+      </p>
     </form>
   );
 }
