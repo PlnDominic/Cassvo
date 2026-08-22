@@ -10,6 +10,7 @@ import { AdminManagementSection } from "./admin-management-section";
 import { SecuritySection } from "./security-section";
 import type { AdminUser } from "./admin-users-table";
 import type { SettingsSection, ActiveSession } from "./types";
+import type { PlatformSettings } from "@/lib/settings-schema";
 
 const SUBTITLES: Record<SettingsSection, string> = {
   general: "Manage platform settings and Preferences",
@@ -23,10 +24,12 @@ export function SettingsBoard({
   admins,
   adminName,
   sessions,
+  settings,
 }: {
   admins: AdminUser[];
   adminName: string;
   sessions: ActiveSession[];
+  settings: PlatformSettings;
 }) {
   const [section, setSection] = useState<SettingsSection>("general");
 
@@ -43,11 +46,11 @@ export function SettingsBoard({
         <SettingsNav active={section} onChange={setSection} />
 
         <div className="flex-1 rounded-2xl bg-white p-6 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)] sm:p-8">
-          {section === "general" && <GeneralSection />}
-          {section === "moderation" && <ModerationSection />}
-          {section === "notification" && <NotificationsSection />}
+          {section === "general" && <GeneralSection initial={settings.general} />}
+          {section === "moderation" && <ModerationSection initial={settings.moderation} />}
+          {section === "notification" && <NotificationsSection initial={settings.notification} />}
           {section === "admin" && <AdminManagementSection initialAdmins={admins} />}
-          {section === "security" && <SecuritySection sessions={sessions} />}
+          {section === "security" && <SecuritySection initial={settings.security} sessions={sessions} />}
         </div>
       </div>
     </div>

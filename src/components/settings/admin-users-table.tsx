@@ -1,6 +1,9 @@
+"use client";
+
 import { Trash2 } from "lucide-react";
 import { Avatar } from "../dashboard/avatar";
 import { Badge } from "../ui/badge";
+import { ToggleSwitch } from "../ui/toggle-switch";
 
 export interface AdminUser {
   id: string;
@@ -11,10 +14,26 @@ export interface AdminUser {
   lastActive: string;
 }
 
-export function AdminUsersTable({ admins, onRemove }: { admins: AdminUser[]; onRemove: (id: string) => void }) {
+export function AdminUsersTable({
+  admins,
+  onRemove,
+  onToggleActive,
+}: {
+  admins: AdminUser[];
+  onRemove: (id: string) => void;
+  onToggleActive: (id: string, active: boolean) => void;
+}) {
+  if (admins.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-[#ececed] p-8 text-center text-sm text-[#939393]">
+        No admin users yet. Invite one below.
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto rounded-xl border border-[#ececed]">
-      <table className="w-full min-w-[560px] text-sm">
+      <table className="w-full min-w-[640px] text-sm">
         <thead>
           <tr className="border-b border-[#ececed] text-left text-sm text-[#060606]">
             <th className="px-4 py-3 font-medium">Admin</th>
@@ -42,14 +61,22 @@ export function AdminUsersTable({ admins, onRemove }: { admins: AdminUser[]; onR
               </td>
               <td className="px-4 py-3 text-[#939393]">{admin.lastActive}</td>
               <td className="px-4 py-3">
-                <button
-                  type="button"
-                  onClick={() => onRemove(admin.id)}
-                  aria-label={`Remove ${admin.name}`}
-                  className="text-brand-red hover:text-brand-red/70"
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div className="flex items-center gap-3">
+                  <ToggleSwitch
+                    size="sm"
+                    checked={admin.active}
+                    onChange={(checked) => onToggleActive(admin.id, checked)}
+                    label={`${admin.active ? "Deactivate" : "Activate"} ${admin.name}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onRemove(admin.id)}
+                    aria-label={`Remove ${admin.name}`}
+                    className="text-brand-red transition-colors hover:text-brand-red/70"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

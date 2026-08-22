@@ -136,7 +136,7 @@ export async function getActiveSessions(limit = 5) {
 
   const { data, error } = await supabase
     .from("login_activity")
-    .select("device, browser, location, current, created_at, admin_users:admin_id (full_name, email)")
+    .select("id, device, browser, location, current, created_at, admin_users:admin_id (full_name, email)")
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -149,8 +149,9 @@ export async function getActiveSessions(limit = 5) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const admin = Array.isArray(row.admin_users) ? (row.admin_users[0] as any) : (row.admin_users as any);
     return {
+      id: row.id,
       name: admin?.full_name ?? "Unknown",
-      detail: admin?.email ?? [row.device, row.location].filter(Boolean).join(" · "),
+      detail: [row.device, row.browser, row.location].filter(Boolean).join(" · ") || (admin?.email ?? "—"),
       time: formatRelative(row.created_at),
       current: row.current,
     };
