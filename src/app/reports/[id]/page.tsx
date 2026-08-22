@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
+import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { ReportDetailBoard } from "@/components/reports/detail/report-detail-board";
 import type { ReportDetailData } from "@/components/reports/detail/types";
 import { getReport } from "@/lib/data/reports";
@@ -41,10 +41,7 @@ export default async function ReportDetailPage({ params }: { params: Promise<{ i
   return (
     <DashboardShell title="Report Details" backHref="/reports">
       <div className="flex flex-col gap-6">
-        <WelcomeBanner
-          name="Angela. A"
-          initial="A"
-          subtitle="Review report details, evidence and moderation actions"
+        <AdminWelcomeBanner subtitle="Review report details, evidence and moderation actions"
           greeting="Hi,"
         />
         <ReportDetailBoard report={report} reportId={record.id} moderators={moderators} initialNotes={record.notes ?? ""} />

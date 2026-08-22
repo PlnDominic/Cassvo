@@ -194,3 +194,49 @@ export async function getMemberGrowth(days = 8) {
 
   return buckets.map(({ label, value }) => ({ label, value }));
 }
+
+export interface RegionStat {
+  name: string;
+  reviewCount: number;
+  averageRating: number | null;
+  businessCount: number;
+}
+
+/** Review volume and ratings grouped by business region. */
+export async function getRegionStats(): Promise<RegionStat[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("region, business_stats(review_count, average_rating)")
+    .not("region", "is", null);
+
+  if (error) {
+    console.error("getRegionStats:", error.message);
+    return [];
+  }
+
+  const byRegion = new Map<string, { reviews: number; ratingSum: number; rated: number; businesses: number }>();
+  for (const row of data ?? []) {
+    const region = row.region as string;
+    const stats = one<{ review_count: number; average_rating: number | null }>(row.business_stats);
+    const entry = byRegion.get(region) ?? { reviews: 0, ratingSum: 0, rated: 0, businesses: 0 };
+    entry.reviews += stats?.review_count ?? 0;
+    entry.businesses += 1;
+    if (stats?.average_rating != null) {
+      entry.ratingSum += stats.average_rating;
+      entry.rated += 1;
+    }
+    byRegion.set(region, entry);
+  }
+
+  return [...byRegion.entries()]
+    .map(([name, e]) => ({
+      name,
+      reviewCount: e.reviews,
+      averageRating: e.rated ? Math.round((e.ratingSum / e.rated) * 10) / 10 : null,
+      businessCount: e.businesses,
+    }))
+    .sort((a, b) => b.reviewCount - a.reviewCount);
+}

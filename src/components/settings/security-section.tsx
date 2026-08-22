@@ -7,6 +7,7 @@ import { ToggleRow } from "./toggle-row";
 import { Avatar } from "../dashboard/avatar";
 import { Badge } from "../ui/badge";
 import { SaveChangesButton } from "./save-changes-button";
+import type { ActiveSession } from "./types";
 
 const AUTHENTICATION = [
   { label: "Two factor Authentication", subtitle: "Enable 2FA for all admin Account" },
@@ -17,13 +18,7 @@ const PASSWORD_POLICY = ["Require Uppercase Letters( A-Z)", "Require Numbers (0-
 const FAILED_LOGIN_LIMITS = ["3 attempts", "5 attempts", "10 attempts"];
 const LOCKED_DURATIONS = ["10 mins", "20 mins", "1 hour"];
 
-const ACTIVE_SESSIONS = [
-  { name: "Amma Nile", email: "nile456@gmail.com" },
-  { name: "Amma Nile", email: "nile456@gmail.com" },
-  { name: "Amma Nile", email: "nile456@gmail.com" },
-];
-
-export function SecuritySection() {
+export function SecuritySection({ sessions }: { sessions: ActiveSession[] }) {
   const [auth, setAuth] = useState<Record<string, boolean>>(Object.fromEntries(AUTHENTICATION.map((a) => [a.label, true])));
   const [passwordPolicy, setPasswordPolicy] = useState<Record<string, boolean>>(
     Object.fromEntries(PASSWORD_POLICY.map((p) => [p, true]))
@@ -108,16 +103,19 @@ export function SecuritySection() {
         <div className="flex-1 rounded-xl border border-[#ececed] p-5">
           <p className="mb-4 text-sm font-medium text-[#060606]">Active Sessions</p>
           <div className="flex flex-col gap-3">
-            {ACTIVE_SESSIONS.map((session, i) => (
+            {sessions.length === 0 && <p className="text-sm text-[#939393]">No active sessions recorded.</p>}
+            {sessions.map((session, i) => (
               <div key={i} className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <Avatar name={session.name} size={36} />
                   <div>
                     <p className="text-sm font-medium text-[#060606]">{session.name}</p>
-                    <p className="text-xs text-[#939393]">{session.email}</p>
+                    <p className="text-xs text-[#939393]">{session.detail}</p>
                   </div>
                 </div>
-                <Badge variant="green">Current Session</Badge>
+                <Badge variant={session.current ? "green" : "gray"}>
+                  {session.current ? "Current Session" : session.time}
+                </Badge>
               </div>
             ))}
           </div>

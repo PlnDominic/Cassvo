@@ -1,5 +1,5 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
+import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ModerationBoard } from "@/components/review-moderation/moderation-board";
 import type { ModerationReview } from "@/components/review-moderation/types";
@@ -34,7 +34,7 @@ export default async function ReviewModerationPage() {
   return (
     <DashboardShell title="Review Moderation">
       <div className="flex flex-col gap-6">
-        <WelcomeBanner name="Angela. A" initial="A" subtitle="Here is everything about reviews" greeting="Hi," />
+        <AdminWelcomeBanner subtitle="Here is everything about reviews" greeting="Hi," />
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Total Reviews" value={formatNumber(counts.total)} iconColor="green" />

@@ -1,5 +1,5 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
+import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ReportsToolbar } from "@/components/reports/reports-toolbar";
 import { ReportsTable } from "@/components/reports/reports-table";
@@ -14,7 +14,7 @@ export default async function ReportsPage() {
   return (
     <DashboardShell title="Report">
       <div className="flex flex-col gap-6">
-        <WelcomeBanner name="Angela. A" initial="A" subtitle="Moderate and manage reports" greeting="Hi," />
+        <AdminWelcomeBanner subtitle="Moderate and manage reports" greeting="Hi," />
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <StatCard label="Total Reports" value={formatNumber(counts.total)} />

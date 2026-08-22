@@ -128,3 +128,31 @@ export async function getLoginActivity(adminId: string): Promise<LoginActivityRo
     status: row.current ? "active" : "successful",
   }));
 }
+
+/** Recent admin sessions, for the Settings → Security "Active Sessions" list. */
+export async function getActiveSessions(limit = 5) {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("login_activity")
+    .select("device, browser, location, current, created_at, admin_users:admin_id (full_name, email)")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("getActiveSessions:", error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const admin = Array.isArray(row.admin_users) ? (row.admin_users[0] as any) : (row.admin_users as any);
+    return {
+      name: admin?.full_name ?? "Unknown",
+      detail: admin?.email ?? [row.device, row.location].filter(Boolean).join(" · "),
+      time: formatRelative(row.created_at),
+      current: row.current,
+    };
+  });
+}

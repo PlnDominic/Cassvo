@@ -21,7 +21,7 @@ export function WelcomeBanner({
       </div>
       <div className="relative z-10">
         <h2 className="text-lg font-medium text-white">
-          {greeting} {name}
+          {[greeting, name].filter(Boolean).join(" ").replace(/,$/, "")}
         </h2>
         <p className="text-sm text-white/70">{subtitle}</p>
       </div>

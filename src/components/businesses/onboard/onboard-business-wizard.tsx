@@ -18,7 +18,7 @@ const STEP_SUBTITLES: Record<number, string> = {
   4: "Preview before onboarding",
 };
 
-export function OnboardBusinessWizard() {
+export function OnboardBusinessWizard({ adminName }: { adminName: string }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [data, setData] = useState<OnboardBusinessData>(EMPTY_ONBOARD_DATA);
@@ -64,7 +64,12 @@ export function OnboardBusinessWizard() {
 
   return (
     <div className="flex flex-col gap-6">
-      <WelcomeBanner name="Angela. A" initial="A" subtitle={STEP_SUBTITLES[step]} greeting="Hi," />
+      <WelcomeBanner
+        name={adminName}
+        initial={adminName.trim().charAt(0).toUpperCase() || "?"}
+        subtitle={STEP_SUBTITLES[step]}
+        greeting="Hi,"
+      />
 
       <div className="flex flex-col gap-8">
         <StepIndicator current={step} />

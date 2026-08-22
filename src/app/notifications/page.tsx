@@ -1,5 +1,5 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
+import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { NotificationsBoard } from "@/components/notifications/notifications-board";
 import { getNotifications, getNotificationCounts } from "@/lib/data/notifications";
@@ -13,10 +13,7 @@ export default async function NotificationsPage() {
   return (
     <DashboardShell title="Notification">
       <div className="flex flex-col gap-6">
-        <WelcomeBanner
-          name="Angela. A"
-          initial="A"
-          subtitle="Manage security preferences and system access"
+        <AdminWelcomeBanner subtitle="Manage security preferences and system access"
           greeting="Hi,"
         />
 

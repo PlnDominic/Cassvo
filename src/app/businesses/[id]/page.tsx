@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
+import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { InfoBar } from "@/components/business-profile/info-bar";
 import { BusinessHero } from "@/components/business-profile/business-hero";
 import { ProfileTabs } from "@/components/business-profile/profile-tabs";
@@ -26,7 +26,7 @@ export default async function BusinessProfilePage({ params }: { params: Promise<
   return (
     <DashboardShell title="Business Profile" backHref="/businesses">
       <div className="flex flex-col gap-6">
-        <WelcomeBanner name="Angela. A" initial="A" subtitle="Everything about a registered business" />
+        <AdminWelcomeBanner subtitle="Everything about a registered business" />
 
         <InfoBar
           items={[

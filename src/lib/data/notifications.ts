@@ -86,3 +86,38 @@ export async function getNotificationCounts() {
     systemAlerts: system.count ?? 0,
   };
 }
+
+export interface DropdownNotification {
+  id: string;
+  kind: string;
+  text: string;
+  time: string;
+  href: string;
+  unread: boolean;
+}
+
+/** The most recent notifications, for the topbar bell dropdown. */
+export async function getRecentNotifications(limit = 5): Promise<DropdownNotification[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("id, kind, title, description, href, read_at, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("getRecentNotifications:", error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    kind: row.kind,
+    text: row.description ?? row.title,
+    time: formatRelative(row.created_at),
+    href: row.href ?? "/notifications",
+    unread: row.read_at === null,
+  }));
+}

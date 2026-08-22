@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
+import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { PhotosTab } from "@/components/business-profile/photos-tab";
 import { ReportsTab } from "@/components/business-profile/reports-tab";
 import { UserProfileCard } from "@/components/users/profile/user-profile-card";
@@ -25,7 +25,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
   return (
     <DashboardShell title="User Profile">
       <div className="flex flex-col gap-6">
-        <WelcomeBanner name="Angela. A" initial="A" subtitle="View User Information Easily" greeting="Hi," />
+        <AdminWelcomeBanner subtitle="View User Information Easily" greeting="Hi," />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <UserProfileCard

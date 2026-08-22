@@ -3,8 +3,17 @@
 import Link from "next/link";
 import { ArrowLeft, Search, Settings } from "lucide-react";
 import { NotificationsDropdown } from "./notifications-dropdown";
+import type { DropdownNotification } from "@/lib/data/notifications";
 
-export function TopBar({ title, backHref }: { title?: string; backHref?: string }) {
+export function TopBar({
+  title,
+  backHref,
+  notifications,
+}: {
+  title?: string;
+  backHref?: string;
+  notifications: DropdownNotification[];
+}) {
   return (
     <div className={`flex items-center gap-3 px-8 pt-[18px] ${title ? "justify-between" : "justify-end"}`}>
       {title && (
@@ -32,7 +41,7 @@ export function TopBar({ title, backHref }: { title?: string; backHref?: string 
           />
         </label>
 
-        <NotificationsDropdown />
+        <NotificationsDropdown notifications={notifications} />
 
         <Link
           href="/settings"

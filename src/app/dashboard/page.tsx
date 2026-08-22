@@ -7,6 +7,7 @@ import { TrendingBusinessesCard } from "@/components/dashboard/trending-business
 import { ReviewsMapCard } from "@/components/dashboard/reviews-map-card";
 import { CategoryPerformanceCard } from "@/components/dashboard/category-performance-card";
 import { getReviewCounts } from "@/lib/data/reviews";
+import { getCurrentAdmin } from "@/lib/data/admins";
 import { getUserCounts } from "@/lib/data/users";
 import { getBusinessCounts } from "@/lib/data/businesses";
 import {
@@ -20,7 +21,8 @@ import { formatNumber } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [reviews, users, businesses, trending, mostViewed, activity, categories] = await Promise.all([
+  const [admin, reviews, users, businesses, trending, mostViewed, activity, categories] = await Promise.all([
+    getCurrentAdmin(),
     getReviewCounts(),
     getUserCounts(),
     getBusinessCounts(),
@@ -35,10 +37,10 @@ export default async function DashboardPage() {
       <div className="flex flex-col gap-8">
         <div className="flex items-center gap-5">
           <div className="flex size-13 shrink-0 items-center justify-center rounded-full bg-brand-red text-xl font-medium text-white">
-            A
+            {admin?.name?.trim().charAt(0).toUpperCase() ?? "?"}
           </div>
           <div>
-            <h1 className="text-xl font-medium text-[#060606]">Welcome Angela. A</h1>
+            <h1 className="text-xl font-medium text-[#060606]">{admin ? `Welcome ${admin.name}` : "Welcome"}</h1>
             <p className="text-base text-[#060606]">Here is what is happening on Cassvo today</p>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
+import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { UsersBoard } from "@/components/users/users-board";
 import { getUsers, getUserCounts } from "@/lib/data/users";
@@ -13,7 +13,7 @@ export default async function UsersPage() {
   return (
     <DashboardShell title="Users">
       <div className="flex flex-col gap-6">
-        <WelcomeBanner name="Angela. A" initial="A" subtitle="Here is everything about reviews" greeting="Hi," />
+        <AdminWelcomeBanner subtitle="Here is everything about reviews" greeting="Hi," />
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Total Users" value={formatNumber(counts.total)} />

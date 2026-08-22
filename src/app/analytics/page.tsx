@@ -1,5 +1,5 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
+import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { AnalyticsToolbar } from "@/components/analytics/analytics-toolbar";
 import { AnalyticsLineChart } from "@/components/analytics/analytics-line-chart";
@@ -46,7 +46,7 @@ export default async function AnalyticsPage() {
   return (
     <DashboardShell title="Analytics">
       <div className="flex flex-col gap-6">
-        <WelcomeBanner name="Angela. A" initial="A" subtitle="Check performance and growth" greeting="Hi," />
+        <AdminWelcomeBanner subtitle="Check performance and growth" greeting="Hi," />
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="User Growth Rate" value={`${growthRate} %`} />

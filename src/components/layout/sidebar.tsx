@@ -51,7 +51,7 @@ function NavLink({
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ adminName, avatarUrl }: { adminName: string | null; avatarUrl: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -106,10 +106,17 @@ export function Sidebar() {
       </nav>
 
       <Link href="/profile" className="mt-8 flex items-center gap-2 hover:opacity-80">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-red text-sm font-medium text-white">
-          A
+        <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-red text-sm font-medium text-white">
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- remote Supabase storage URL
+            <img src={avatarUrl} alt="" className="size-full object-cover" />
+          ) : (
+            (adminName?.trim().charAt(0).toUpperCase() ?? "?")
+          )}
         </div>
-        <span className="text-[16px] font-medium tracking-[0.01em] text-white">Angela A.</span>
+        <span className="text-[16px] font-medium tracking-[0.01em] text-white">
+          {adminName ?? "Not signed in"}
+        </span>
       </Link>
     </aside>
   );

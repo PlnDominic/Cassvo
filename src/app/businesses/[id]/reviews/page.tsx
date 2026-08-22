@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
+import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { RatingBreakdownBar } from "@/components/reviews/rating-breakdown-bar";
 import { FilterDropdown } from "@/components/reviews/filter-dropdown";
@@ -69,7 +69,7 @@ export default async function BusinessReviewsPage({ params }: { params: Promise<
   return (
     <DashboardShell title="Business Reviews" backHref={`/businesses/${id}`}>
       <div className="flex flex-col gap-6">
-        <WelcomeBanner name="Angela. A" initial="A" subtitle={`All reviews for ${business.name}`} />
+        <AdminWelcomeBanner subtitle={`All reviews for ${business.name}`} />
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <StatCard label="Total Reviews" value={formatNumber(business.reviewCount)} iconColor="green" />

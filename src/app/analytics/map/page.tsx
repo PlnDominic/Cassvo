@@ -1,39 +1,51 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
+import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { PeriodDropdown } from "@/components/dashboard/period-dropdown";
 import { OverviewStatsCard, type OverviewStat } from "@/components/analytics/overview-stats-card";
 import { GhanaMapCard } from "@/components/analytics/ghana-map-card";
 import { TopRegionsCard, type TopRegion } from "@/components/analytics/top-regions-card";
 import { RegionPerformanceOverview, type RegionPerformance } from "@/components/analytics/region-performance-overview";
 import { DownloadReportButton } from "@/components/analytics/download-report-button";
+import { getReviewCounts } from "@/lib/data/reviews";
+import { getBusinessCounts } from "@/lib/data/businesses";
+import { getRegionStats } from "@/lib/data/dashboard";
+import { formatNumber } from "@/lib/format";
 
-const overviewStats: OverviewStat[] = [
-  { label: "Total Reviews", value: "1,890,096", trend: "8.5% Up from yesterday" },
-  { label: "Active Businesses", value: "1,890,096", trend: "8.5% Up from last Month" },
-  { label: "Countries", value: "32" },
-  { label: "Average Rating", value: "4.7", trend: "8.5% Up from last Month" },
-];
+export const dynamic = "force-dynamic";
 
-const topRegions: TopRegion[] = [
-  { name: "Accra", value: "42,231", color: "#ea0505" },
-  { name: "Ashanti", value: "42,231", color: "#f59e0b" },
-  { name: "Western", value: "42,231", color: "#14b8a6" },
-  { name: "Central", value: "42,231", color: "#6366f1" },
-];
+const REGION_COLORS = ["#ea0505", "#f59e0b", "#14b8a6", "#6366f1", "#f97316", "#8b5cf6"];
 
-const regionPerformance: RegionPerformance[] = [
-  { name: "Greater Accra", reviewCount: "4,980", rating: "4.7", trend: "8.5%" },
-  { name: "Ashanti Region", reviewCount: "4,980", rating: "4.7", trend: "8.5%" },
-  { name: "Volta Region", reviewCount: "4,980", rating: "4.7", trend: "8.5%" },
-  { name: "Upper East", reviewCount: "4,980", rating: "4.7", trend: "8.5%" },
-  { name: "Western Region", reviewCount: "4,980", rating: "4.7", trend: "8.5%" },
-];
+export default async function ReviewMapAnalysisPage() {
+  const [reviews, businesses, regions] = await Promise.all([
+    getReviewCounts(),
+    getBusinessCounts(),
+    getRegionStats(),
+  ]);
 
-export default function AnalyticsPage() {
+  const overviewStats: OverviewStat[] = [
+    { label: "Total Reviews", value: formatNumber(reviews.total) },
+    { label: "Active Businesses", value: formatNumber(businesses.onboarded) },
+    { label: "Regions", value: formatNumber(regions.length) },
+    { label: "Average Rating", value: reviews.averageRating !== null ? String(reviews.averageRating) : "—" },
+  ];
+
+  const topRegions: TopRegion[] = regions.slice(0, 4).map((r, i) => ({
+    name: r.name,
+    value: formatNumber(r.reviewCount),
+    color: REGION_COLORS[i % REGION_COLORS.length],
+  }));
+
+  const regionPerformance: RegionPerformance[] = regions.slice(0, 5).map((r) => ({
+    name: r.name,
+    reviewCount: formatNumber(r.reviewCount),
+    rating: r.averageRating !== null ? String(r.averageRating) : "—",
+    trend: "—",
+  }));
+
   return (
     <DashboardShell title="Review Map Analysis" backHref="/analytics">
       <div className="flex flex-col gap-6">
-        <WelcomeBanner name="Angela. A" initial="A" subtitle="See how Cassvo is growing in Ghana" />
+        <AdminWelcomeBanner subtitle="See how Cassvo is growing in Ghana" />
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
