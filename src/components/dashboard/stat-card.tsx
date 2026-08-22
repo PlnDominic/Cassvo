@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { TrendingUp, AlertTriangle, Users } from "lucide-react";
-import statCardBg from "../../../public/images/dashboard/stat-card-bg.png";
+import statCardBg from "../../../public/images/auth/background.png";
 
 interface StatCardProps {
   label: string;
