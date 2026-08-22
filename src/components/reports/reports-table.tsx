@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ReportStatusBadge } from "./report-status-badge";
 import type { ReportRow } from "./types";
 
@@ -21,7 +22,11 @@ export function ReportsTable({ reports }: { reports: ReportRow[] }) {
               key={report.id}
               className={`border-b border-[#ececed] last:border-b-0 ${report.highlighted ? "bg-brand-red/5" : ""}`}
             >
-              <td className="px-6 py-4 font-medium text-[#060606]">{report.reportedItem}</td>
+              <td className="px-6 py-4 font-medium text-[#060606]">
+                <Link href={`/reports/${report.id}`} className="hover:text-brand-red">
+                  {report.reportedItem}
+                </Link>
+              </td>
               <td className="px-6 py-4 text-[#606060]">{report.type}</td>
               <td className="px-6 py-4 text-[#606060]">{report.reportedBy}</td>
               <td className="px-6 py-4 text-[#606060]">{report.reason}</td>
