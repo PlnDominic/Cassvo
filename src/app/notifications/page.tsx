@@ -13,9 +13,7 @@ export default async function NotificationsPage() {
   return (
     <DashboardShell title="Notification">
       <div className="flex flex-col gap-6">
-        <AdminWelcomeBanner subtitle="Manage security preferences and system access"
-          greeting="Hi,"
-        />
+        <AdminWelcomeBanner subtitle="Stay on top of platform activity" greeting="Hi," />
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Total Notification" value={formatNumber(counts.total)} />

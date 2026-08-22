@@ -1,5 +1,5 @@
 import Image from "next/image";
-import bg from "../../../public/images/dashboard/stat-card-bg.png";
+import bg from "../../../public/images/auth/background.png";
 
 export function WelcomeBanner({
   name,

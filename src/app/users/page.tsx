@@ -13,7 +13,7 @@ export default async function UsersPage() {
   return (
     <DashboardShell title="Users">
       <div className="flex flex-col gap-6">
-        <AdminWelcomeBanner subtitle="Here is everything about reviews" greeting="Hi," />
+        <AdminWelcomeBanner subtitle="Here is everything about users" greeting="Hi," />
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Total Users" value={formatNumber(counts.total)} />

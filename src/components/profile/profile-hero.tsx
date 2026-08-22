@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { MapPin, Calendar } from "lucide-react";
-import bg from "../../../public/images/dashboard/stat-card-bg.png";
+import bg from "../../../public/images/auth/background.png";
 import type { ProfileStat } from "./types";
 
 export function ProfileHero({
