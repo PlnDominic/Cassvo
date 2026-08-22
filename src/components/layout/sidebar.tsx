@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const mainNav = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -55,8 +56,11 @@ export function Sidebar({ adminName, avatarUrl }: { adminName: string | null; av
   const pathname = usePathname();
   const router = useRouter();
 
-  function handleLogout() {
+  async function handleLogout() {
+    const supabase = createClient();
+    if (supabase) await supabase.auth.signOut();
     router.push("/");
+    router.refresh();
   }
 
   return (
