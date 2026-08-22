@@ -240,3 +240,101 @@ export async function getRegionStats(): Promise<RegionStat[]> {
     }))
     .sort((a, b) => b.reviewCount - a.reviewCount);
 }
+
+export interface CityStat {
+  name: string;
+  percent: number;
+  reviewCount: number;
+  businessCount: number;
+  averageRating: number | null;
+}
+
+const CITY_COLORS = ["#ea0505", "#f59e0b", "#14b8a6", "#6366f1", "#f97316"];
+
+/** Review volume grouped by business city_area, for the "Reviews in Ghana" map card. */
+export async function getCityStats(limit = 5): Promise<(CityStat & { color: string })[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("city_area, business_stats(review_count, average_rating)")
+    .not("city_area", "is", null);
+
+  if (error) {
+    console.error("getCityStats:", error.message);
+    return [];
+  }
+
+  const byCity = new Map<string, { reviews: number; ratingSum: number; rated: number; businesses: number }>();
+  for (const row of data ?? []) {
+    const city = row.city_area as string;
+    const stats = one<{ review_count: number; average_rating: number | null }>(row.business_stats);
+    const entry = byCity.get(city) ?? { reviews: 0, ratingSum: 0, rated: 0, businesses: 0 };
+    entry.reviews += stats?.review_count ?? 0;
+    entry.businesses += 1;
+    if (stats?.average_rating != null) {
+      entry.ratingSum += stats.average_rating;
+      entry.rated += 1;
+    }
+    byCity.set(city, entry);
+  }
+
+  const ranked = [...byCity.entries()]
+    .map(([name, e]) => ({
+      name,
+      reviewCount: e.reviews,
+      businessCount: e.businesses,
+      averageRating: e.rated ? Math.round((e.ratingSum / e.rated) * 10) / 10 : null,
+    }))
+    .sort((a, b) => b.reviewCount - a.reviewCount)
+    .slice(0, limit);
+
+  const max = Math.max(1, ...ranked.map((c) => c.reviewCount));
+
+  return ranked.map((city, i) => ({
+    ...city,
+    percent: Math.round((city.reviewCount / max) * 100),
+    color: CITY_COLORS[i % CITY_COLORS.length],
+  }));
+}
+
+export interface TrustScore {
+  overall: number;
+  verifiedReviewsPercent: number;
+  businessesVerifiedPercent: number;
+  reportResolutionRate: number;
+  fakeReviewsRemovedPercent: number;
+}
+
+/** Platform-health metrics for the dashboard's Trust Score card. */
+export async function getTrustScore(): Promise<TrustScore> {
+  const supabase = await createClient();
+  if (!supabase) {
+    return { overall: 0, verifiedReviewsPercent: 0, businessesVerifiedPercent: 0, reportResolutionRate: 0, fakeReviewsRemovedPercent: 0 };
+  }
+
+  const [reviewsTotal, reviewsApproved, reviewsRejected, businessesTotal, businessesConfirmed, reportsTotal, reportsResolved] =
+    await Promise.all([
+      supabase.from("reviews").select("id", { count: "exact", head: true }),
+      supabase.from("reviews").select("id", { count: "exact", head: true }).eq("status", "approved"),
+      supabase.from("reviews").select("id", { count: "exact", head: true }).eq("status", "rejected"),
+      supabase.from("businesses").select("id", { count: "exact", head: true }).eq("is_draft", false),
+      supabase.from("businesses").select("id", { count: "exact", head: true }).eq("is_draft", false).eq("status", "confirmed"),
+      supabase.from("reports").select("id", { count: "exact", head: true }),
+      supabase.from("reports").select("id", { count: "exact", head: true }).eq("status", "resolved"),
+    ]);
+
+  const pct = (num: number, den: number) => (den > 0 ? Math.round((num / den) * 100) : 0);
+
+  const verifiedReviewsPercent = pct(reviewsApproved.count ?? 0, reviewsTotal.count ?? 0);
+  const businessesVerifiedPercent = pct(businessesConfirmed.count ?? 0, businessesTotal.count ?? 0);
+  const reportResolutionRate = pct(reportsResolved.count ?? 0, reportsTotal.count ?? 0);
+  const fakeReviewsRemovedPercent = pct(reviewsRejected.count ?? 0, reviewsTotal.count ?? 0);
+
+  const overall = Math.round(
+    (verifiedReviewsPercent + businessesVerifiedPercent + reportResolutionRate + fakeReviewsRemovedPercent) / 4,
+  );
+
+  return { overall, verifiedReviewsPercent, businessesVerifiedPercent, reportResolutionRate, fakeReviewsRemovedPercent };
+}
