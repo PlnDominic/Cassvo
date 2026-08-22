@@ -1,4 +1,3 @@
-import type { StaticImageData } from "next/image";
 import type { ReportStatus } from "../types";
 
 export interface ReportDetailData {
@@ -16,7 +15,7 @@ export interface ReportDetailData {
   reporterTimeAgo: string;
   reporterVerified: boolean;
   evidenceReasonText: string;
-  images: StaticImageData[];
+  images: string[];
   recommendationTitle: string;
   recommendationText: string;
 }

@@ -4,11 +4,18 @@ import { useState } from "react";
 import { AlertTriangle, ChevronDown } from "lucide-react";
 import type { ReportDetailData } from "./types";
 
-const MODERATORS = ["Kofi Mensah", "Angela A.", "Kwame D.", "Ella M."];
-
-export function ModerationPanel({ report }: { report: ReportDetailData }) {
-  const [notes, setNotes] = useState("");
-  const [moderator, setModerator] = useState(MODERATORS[0]);
+export function ModerationPanel({
+  report,
+  moderators,
+  initialNotes,
+}: {
+  report: ReportDetailData;
+  reportId: string;
+  moderators: string[];
+  initialNotes: string;
+}) {
+  const [notes, setNotes] = useState(initialNotes);
+  const [moderator, setModerator] = useState(moderators[0] ?? "");
 
   return (
     <div className="flex flex-col gap-6 rounded-2xl bg-white p-6 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
@@ -50,7 +57,7 @@ export function ModerationPanel({ report }: { report: ReportDetailData }) {
             onChange={(e) => setModerator(e.target.value)}
             className="h-[52px] w-full appearance-none rounded-xl border border-[#ececed] bg-white px-4 pr-10 text-sm font-medium text-[#060606] focus:border-brand-red focus:outline-none"
           >
-            {MODERATORS.map((name) => (
+            {moderators.map((name) => (
               <option key={name} value={name}>
                 {name}
               </option>

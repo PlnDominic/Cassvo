@@ -10,9 +10,6 @@ import { DetailsStep } from "./details-step";
 import { VerificationStep } from "./verification-step";
 import { ReviewStep } from "./review-step";
 import { EMPTY_ONBOARD_DATA, type OnboardBusinessData } from "./types";
-import skyLounge from "../../../../public/images/dashboard/photo-sky-lounge.png";
-import photoBusiness1 from "../../../../public/images/dashboard/photo-business-1.png";
-import photoBusiness2 from "../../../../public/images/dashboard/photo-business-2.png";
 
 const STEP_SUBTITLES: Record<number, string> = {
   1: "Onboard a business",
@@ -21,22 +18,10 @@ const STEP_SUBTITLES: Record<number, string> = {
   4: "Preview before onboarding",
 };
 
-const INITIAL_DATA: OnboardBusinessData = {
-  ...EMPTY_ONBOARD_DATA,
-  additionalPhotos: [
-    skyLounge.src,
-    photoBusiness1.src,
-    photoBusiness2.src,
-    skyLounge.src,
-    photoBusiness1.src,
-    photoBusiness2.src,
-  ].map((preview, i) => ({ id: `seed-${i}`, preview })),
-};
-
 export function OnboardBusinessWizard() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [data, setData] = useState<OnboardBusinessData>(INITIAL_DATA);
+  const [data, setData] = useState<OnboardBusinessData>(EMPTY_ONBOARD_DATA);
   const [result, setResult] = useState<"draft" | "verified" | null>(null);
 
   function patch(update: Partial<OnboardBusinessData>) {

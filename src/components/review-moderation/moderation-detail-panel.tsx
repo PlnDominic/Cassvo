@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Check, X } from "lucide-react";
 import { Avatar } from "../dashboard/avatar";
 import { StarRating } from "../ui/star-rating";
@@ -34,7 +33,12 @@ export function ModerationDetailPanel({
             <p className="text-xs text-[#939393]">{review.businessLocation}</p>
           </div>
           <div className="relative size-14 shrink-0 overflow-hidden rounded-xl">
-            <Image src={review.businessPhoto} alt={review.business} fill className="object-cover" />
+            {review.businessPhotoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- remote Supabase storage URL
+              <img src={review.businessPhotoUrl} alt={review.business} className="size-full object-cover" />
+            ) : (
+              <div className="size-full bg-[#f7f7f8]" />
+            )}
           </div>
         </div>
       </div>
@@ -68,12 +72,14 @@ export function ModerationDetailPanel({
       <div className="mt-4 grid grid-cols-4 gap-2">
         {review.photos.slice(0, 3).map((photo, i) => (
           <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-[#f7f7f8]">
-            <Image src={photo} alt="" fill className="object-cover" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- remote Supabase storage URL */}
+            <img src={photo} alt="" className="size-full object-cover" />
           </div>
         ))}
         {review.photos.length > 3 && (
           <div className="relative aspect-square overflow-hidden rounded-xl bg-[#f7f7f8]">
-            <Image src={review.photos[3]} alt="" fill className="object-cover brightness-50" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- remote Supabase storage URL */}
+            <img src={review.photos[3]} alt="" className="size-full object-cover brightness-50" />
             <div className="absolute inset-0 flex items-center justify-center text-lg font-medium text-white">
               {review.photos.length - 3}+
             </div>
@@ -83,8 +89,8 @@ export function ModerationDetailPanel({
 
       <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-[#606060]">
         {review.tags.map((tag) => (
-          <span key={tag.label} className="flex items-center gap-1.5">
-            {tag.label}
+          <span key={tag} className="flex items-center gap-1.5">
+            {tag}
           </span>
         ))}
       </div>

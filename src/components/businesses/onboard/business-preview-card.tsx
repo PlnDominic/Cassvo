@@ -1,7 +1,6 @@
 import { MapPin, Phone, Globe, Sparkles, Umbrella, Martini, BedDouble } from "lucide-react";
 import type { OnboardBusinessData } from "./types";
 import { PhotoGallery } from "./photo-gallery";
-import coverFallback from "../../../../public/images/dashboard/photo-sky-lounge.png";
 
 const PRICE_LEVEL: Record<string, number> = { Budget: 1, Moderate: 2, Premium: 2, Luxury: 3 };
 
@@ -22,8 +21,12 @@ export function BusinessPreviewCard({ data }: { data: OnboardBusinessData }) {
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
       <div className="relative h-[190px] w-full">
-        {/* eslint-disable-next-line @next/next/no-img-element -- mix of static fallback and user-uploaded blob preview */}
-        <img src={data.coverImagePreview ?? coverFallback.src} alt="" className="size-full object-cover" />
+        {data.coverImagePreview ? (
+          // eslint-disable-next-line @next/next/no-img-element -- user-uploaded blob preview
+          <img src={data.coverImagePreview} alt="" className="size-full object-cover" />
+        ) : (
+          <div className="size-full bg-[#1a1a1a]" />
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-8 p-6 pt-0 lg:grid-cols-[1fr_220px]">

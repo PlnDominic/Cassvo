@@ -37,11 +37,7 @@ export interface OnboardBusinessData {
 
 export const PRICE_OPTIONS = ["Budget", "Moderate", "Premium", "Luxury"];
 
-export const DEFAULT_DOCUMENTS: VerificationDocument[] = [
-  { id: "registration-certificate", title: "Business Registration Certification", filename: "Sunset_Restaurant.pdf", meta: "PDF · 1.2 MB" },
-  { id: "tin", title: "Tax Identification Number (TIN)", filename: "Sunset_Restaurant.pdf", meta: "PDF · 1.2 MB" },
-  { id: "operating-permit", title: "Operating Permit (Optional)", filename: "Sunset Restaurant", meta: "PDF · 1.2 MB" },
-];
+export const DEFAULT_DOCUMENTS: VerificationDocument[] = [];
 
 export const EMPTY_ONBOARD_DATA: OnboardBusinessData = {
   name: "",

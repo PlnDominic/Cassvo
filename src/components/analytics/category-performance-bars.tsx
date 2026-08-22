@@ -7,6 +7,7 @@ export function CategoryPerformanceBars({ items }: { items: CategoryPerformanceI
   return (
     <div className="flex h-full flex-col gap-4 rounded-2xl bg-white p-6 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
       <p className="text-sm font-medium text-[#060606]">Category Performance</p>
+      {items.length === 0 && <p className="py-6 text-center text-xs text-[#939393]">No category data yet.</p>}
       <div className="flex flex-col gap-3">
         {items.map((item) => (
           <div key={item.label} className="flex items-center gap-3">

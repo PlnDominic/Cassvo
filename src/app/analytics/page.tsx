@@ -2,80 +2,84 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { AnalyticsToolbar } from "@/components/analytics/analytics-toolbar";
-import { AnalyticsLineChart, type ChartPoint } from "@/components/analytics/analytics-line-chart";
+import { AnalyticsLineChart } from "@/components/analytics/analytics-line-chart";
 import { TopBusinessesCard, type TopBusiness } from "@/components/analytics/top-businesses-card";
-import { CategoryPerformanceBars, type CategoryPerformanceItem } from "@/components/analytics/category-performance-bars";
-import skyLounge from "../../../public/images/dashboard/photo-sky-lounge.png";
-import photoBusiness1 from "../../../public/images/dashboard/photo-business-1.png";
-import photoBusiness2 from "../../../public/images/dashboard/photo-business-2.png";
+import { CategoryPerformanceBars } from "@/components/analytics/category-performance-bars";
+import { getUserCounts } from "@/lib/data/users";
+import { getBusinessCounts } from "@/lib/data/businesses";
+import { getReviewCounts } from "@/lib/data/reviews";
+import {
+  getTrendingBusinesses,
+  getCategoryPerformance,
+  getReviewGrowth,
+  getMemberGrowth,
+} from "@/lib/data/dashboard";
+import { formatNumber } from "@/lib/format";
 
-const userGrowthPoints: ChartPoint[] = [
-  { label: "May 6", value: 700 },
-  { label: "May 7", value: 1300 },
-  { label: "May 8", value: 1050 },
-  { label: "May 9", value: 1400 },
-  { label: "May 10", value: 2400 },
-  { label: "May 11", value: 750 },
-  { label: "May 12", value: 1550 },
-  { label: "May 13", value: 1750 },
-];
+export const dynamic = "force-dynamic";
 
-const reviewGrowthPoints: ChartPoint[] = [
-  { label: "May 6", value: 550 },
-  { label: "May 7", value: 1450 },
-  { label: "May 8", value: 950 },
-  { label: "May 9", value: 1150 },
-  { label: "May 10", value: 2400 },
-  { label: "May 11", value: 800 },
-  { label: "May 12", value: 1500 },
-  { label: "May 13", value: 1900 },
-];
+export default async function AnalyticsPage() {
+  const [users, businesses, reviews, trending, categories, reviewGrowth, memberGrowth] = await Promise.all([
+    getUserCounts(),
+    getBusinessCounts(),
+    getReviewCounts(),
+    getTrendingBusinesses(4),
+    getCategoryPerformance(),
+    getReviewGrowth(),
+    getMemberGrowth(),
+  ]);
 
-const topBusinesses: TopBusiness[] = [
-  { name: "Kofi's Kitchen", category: "Food & Dining", rating: 4.8, reviewCount: 128, change: "+5%", photo: photoBusiness1 },
-  { name: "Blooms Space", category: "Beauty & Fashion", rating: 4.8, reviewCount: 128, change: "+5%", photo: photoBusiness2 },
-  { name: "Sky Lounge", category: "NightLife", rating: 4.8, reviewCount: 128, change: "+5%", photo: skyLounge },
-  { name: "Kempinski", category: "Hotel", rating: 4.8, reviewCount: 128, change: "+5%", photo: photoBusiness1 },
-];
+  const topBusinesses: TopBusiness[] = trending.map((b) => ({
+    name: b.name,
+    category: b.category,
+    rating: b.rating,
+    reviewCount: b.reviewCount,
+    change: "—",
+    photoUrl: b.photoUrl,
+  }));
 
-const categoryPerformance: CategoryPerformanceItem[] = [
-  { label: "Beauty & Fashion", percent: 90 },
-  { label: "Event Vendors", percent: 75 },
-  { label: "Explore Ghana", percent: 65 },
-  { label: "NightLife", percent: 55 },
-  { label: "Food & Dining", percent: 45 },
-  { label: "Hotel & Lodging", percent: 35 },
-  { label: "Others", percent: 40 },
-];
+  const categoryBars = categories.map((c) => ({ label: c.name, percent: c.percent }));
 
-export default function AnalyticsPage() {
+  const newUsers = memberGrowth.reduce((sum, p) => sum + p.value, 0);
+  const growthRate = users.total > 0 ? Math.round((newUsers / users.total) * 100) : 0;
+
   return (
     <DashboardShell title="Analytics">
       <div className="flex flex-col gap-6">
         <WelcomeBanner name="Angela. A" initial="A" subtitle="Check performance and growth" greeting="Hi," />
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="User Growth Rate" value="22 %" trend={{ type: "up", text: "8.5% Up from last Week" }} />
-          <StatCard label="Total Users" value="40,689" trend={{ type: "up", text: "8.5% Up from yesterday" }} />
-          <StatCard label="Total Businesses" value="40,689" trend={{ type: "up", text: "8.5% Up from yesterday" }} />
-          <StatCard label="Page Views" value="40,689" trend={{ type: "up", text: "8.5% Up from yesterday" }} />
+          <StatCard label="User Growth Rate" value={`${growthRate} %`} />
+          <StatCard label="Total Users" value={formatNumber(users.total)} />
+          <StatCard label="Total Businesses" value={formatNumber(businesses.onboarded)} />
+          <StatCard label="Total Reviews" value={formatNumber(reviews.total)} />
         </div>
 
         <AnalyticsToolbar
-          userGrowth={userGrowthPoints}
-          reviewGrowth={reviewGrowthPoints}
+          userGrowth={memberGrowth}
+          reviewGrowth={reviewGrowth}
           topBusinesses={topBusinesses}
-          categories={categoryPerformance}
+          categories={categoryBars}
         />
 
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_300px]">
-          <AnalyticsLineChart title="User Growth" total="34,302" changeText="+ 8.5%" points={userGrowthPoints} />
+          <AnalyticsLineChart
+            title="User Growth"
+            total={formatNumber(users.total)}
+            changeText={`+ ${growthRate}%`}
+            points={memberGrowth}
+          />
           <TopBusinessesCard businesses={topBusinesses} />
         </div>
 
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[340px_1fr]">
-          <CategoryPerformanceBars items={categoryPerformance} />
-          <AnalyticsLineChart title="Review Growth" total="34,302" changeText="+ 8.5%" points={reviewGrowthPoints} />
+          <CategoryPerformanceBars items={categoryBars} />
+          <AnalyticsLineChart
+            title="Review Growth"
+            total={formatNumber(reviews.total)}
+            changeText={`+ ${reviewGrowth.reduce((s, p) => s + p.value, 0)}`}
+            points={reviewGrowth}
+          />
         </div>
       </div>
     </DashboardShell>

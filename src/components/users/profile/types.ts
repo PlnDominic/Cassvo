@@ -1,5 +1,3 @@
-import type { StaticImageData } from "next/image";
-
 export interface UserProfileData {
   name: string;
   memberLabel: string;
@@ -21,5 +19,5 @@ export interface UserReview {
   rating: number;
   reviewCount: number;
   date: string;
-  photo: StaticImageData;
+  photoUrl: string | null;
 }

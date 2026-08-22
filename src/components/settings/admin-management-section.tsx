@@ -6,17 +6,11 @@ import { AdminUsersTable, type AdminUser } from "./admin-users-table";
 import { SettingsField } from "./settings-field";
 import { PermissionToggle } from "./permission-toggle";
 
-const INITIAL_ADMINS: AdminUser[] = [
-  { id: "1", name: "Ella Nile", email: "nile456@gmail.com", role: "Super Admin", active: true, lastActive: "2 mins ago" },
-  { id: "2", name: "Meriam Bale", email: "bale@gmail.com", role: "Moderator", active: true, lastActive: "10 mins ago" },
-  { id: "3", name: "John Doe", email: "johhny@gmail.com", role: "Analyst", active: false, lastActive: "18 mins ago" },
-];
-
 const ROLES = ["Select Role", "Super Admin", "Moderator", "Analyst"];
 const PERMISSIONS = ["Reviews", "Businesses", "Users", "Reports", "Analytics", "Settings"];
 
-export function AdminManagementSection() {
-  const [admins, setAdmins] = useState(INITIAL_ADMINS);
+export function AdminManagementSection({ initialAdmins }: { initialAdmins: AdminUser[] }) {
+  const [admins, setAdmins] = useState(initialAdmins);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState(ROLES[0]);

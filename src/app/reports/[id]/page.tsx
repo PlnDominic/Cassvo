@@ -1,40 +1,53 @@
+import { notFound } from "next/navigation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
 import { ReportDetailBoard } from "@/components/reports/detail/report-detail-board";
 import type { ReportDetailData } from "@/components/reports/detail/types";
-import photoBusiness1 from "../../../../public/images/dashboard/photo-business-1.png";
-import photoBusiness2 from "../../../../public/images/dashboard/photo-business-2.png";
-import skyLounge from "../../../../public/images/dashboard/photo-sky-lounge.png";
+import { getReport } from "@/lib/data/reports";
+import { getModerators } from "@/lib/data/admins";
 
-const report: ReportDetailData = {
-  refId: "#RP-2025--143",
-  status: "pending",
-  reportedDate: "May 21, 2026 . 2:33PM",
-  priority: "High",
-  reason: "Fake Review",
-  reportedByName: "Angela A.",
-  against: "Sky Lounge",
-  totalReports: "3 Reports",
-  currentStatus: "Under Investigation",
-  reporterName: "Ama",
-  reporterLocation: "East Legon",
-  reporterTimeAgo: "2mins ago",
-  reporterVerified: true,
-  evidenceReasonText:
-    "The appears to be a fake review. The uploaded photos do not belong to sky Lounge and several users have mentioned similar concerns",
-  images: [photoBusiness1, photoBusiness2, skyLounge],
-  recommendationTitle: "Escalate for review",
-  recommendationText: "This review has a high risk score and requires moderator attention",
-};
+export const dynamic = "force-dynamic";
 
 export default async function ReportDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  await params;
+  const { id } = await params;
+  const record = await getReport(id);
+  if (!record) notFound();
+
+  const moderators = await getModerators();
+
+  const report: ReportDetailData = {
+    refId: record.reference,
+    status: record.status,
+    reportedDate: record.reportedDate,
+    priority: (record.priority.charAt(0).toUpperCase() + record.priority.slice(1)) as "High" | "Medium" | "Low",
+    reason: record.reason,
+    reportedByName: record.reportedByName,
+    against: record.againstName,
+    totalReports: `${record.totalReports} Report${record.totalReports === 1 ? "" : "s"}`,
+    currentStatus: record.status === "investigating" ? "Under Investigation" : record.status,
+    reporterName: record.reporterName,
+    reporterLocation: record.reporterLocation ?? "—",
+    reporterTimeAgo: record.reporterTimeAgo,
+    reporterVerified: record.reporterVerified,
+    evidenceReasonText: record.details ?? record.reason,
+    images: record.images,
+    recommendationTitle: record.priority === "high" ? "Escalate for review" : "Review when possible",
+    recommendationText:
+      record.priority === "high"
+        ? "This review has a high risk score and requires moderator attention"
+        : "This report is queued for standard moderation review",
+  };
 
   return (
-    <DashboardShell title="Report Details">
+    <DashboardShell title="Report Details" backHref="/reports">
       <div className="flex flex-col gap-6">
-        <WelcomeBanner name="Angela. A" initial="A" subtitle="Review report details, evidence and moderation actions" greeting="Hi," />
-        <ReportDetailBoard report={report} />
+        <WelcomeBanner
+          name="Angela. A"
+          initial="A"
+          subtitle="Review report details, evidence and moderation actions"
+          greeting="Hi,"
+        />
+        <ReportDetailBoard report={report} reportId={record.id} moderators={moderators} initialNotes={record.notes ?? ""} />
       </div>
     </DashboardShell>
   );

@@ -1,17 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Image, { type StaticImageData } from "next/image";
-import { ThumbsUp, ThumbsDown, Sparkles, Smile } from "lucide-react";
+import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { tagIcon } from "./tag-icon";
 import { StarRating } from "../ui/star-rating";
 import { Avatar } from "../dashboard/avatar";
-
-const TAG_ICONS = { sparkles: Sparkles, smile: Smile } as const;
-
-export interface ReviewTag {
-  label: string;
-  icon: keyof typeof TAG_ICONS;
-}
 
 export interface ReviewData {
   name: string;
@@ -24,8 +17,8 @@ export interface ReviewData {
   price: number;
   crowdLevel: string;
   text: string;
-  photos: StaticImageData[];
-  tags: ReviewTag[];
+  photos: string[];
+  tags: string[];
   likes: number;
   dislikes: number;
 }
@@ -96,12 +89,14 @@ export function ReviewCard({ review }: { review: ReviewData }) {
       <div className="mt-4 grid grid-cols-4 gap-2">
         {visiblePhotos.map((photo, i) => (
           <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-[#f7f7f8]">
-            <Image src={photo} alt="" fill className="object-cover" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- remote Supabase storage URL */}
+            <img src={photo} alt="" className="size-full object-cover" />
           </div>
         ))}
         {extraPhotos > 0 && (
           <div className="relative aspect-square overflow-hidden rounded-xl bg-[#f7f7f8]">
-            <Image src={review.photos[3]} alt="" fill className="object-cover brightness-50" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- remote Supabase storage URL */}
+            <img src={review.photos[3]} alt="" className="size-full object-cover brightness-50" />
             <div className="absolute inset-0 flex items-center justify-center text-lg font-medium text-white">
               {extraPhotos}+
             </div>
@@ -111,11 +106,11 @@ export function ReviewCard({ review }: { review: ReviewData }) {
 
       <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-[#606060]">
         {review.tags.map((tag) => {
-          const Icon = TAG_ICONS[tag.icon];
+          const Icon = tagIcon(tag);
           return (
-            <span key={tag.label} className="flex items-center gap-1.5">
+            <span key={tag} className="flex items-center gap-1.5">
               <Icon size={16} className="text-[#606060]" />
-              {tag.label}
+              {tag}
             </span>
           );
         })}

@@ -1,9 +1,8 @@
-import { Sparkles, Smile, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
+import { tagIcon } from "../reviews/tag-icon";
 import { Avatar } from "../dashboard/avatar";
 import { ModerationStatusBadge } from "./status-badge";
 import type { ModerationReview } from "./types";
-
-const TAG_ICONS = { sparkles: Sparkles, smile: Smile } as const;
 
 export function ModerationListItem({
   review,
@@ -43,11 +42,11 @@ export function ModerationListItem({
       <div className="mt-3 flex items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-3 text-xs text-[#606060]">
           {review.tags.map((tag) => {
-            const Icon = TAG_ICONS[tag.icon];
+            const Icon = tagIcon(tag);
             return (
-              <span key={tag.label} className="flex items-center gap-1">
+              <span key={tag} className="flex items-center gap-1">
                 <Icon size={14} className="text-[#606060]" />
-                {tag.label}
+                {tag}
               </span>
             );
           })}

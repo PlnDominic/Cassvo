@@ -11,24 +11,29 @@ interface Tab {
   danger?: boolean;
 }
 
-const tabs: Tab[] = [
-  { key: "overview", label: "Overview" },
-  { key: "photos", label: "Photos", count: 14, countClassName: "text-emerald-600" },
-  { key: "business-info", label: "Business Info" },
-  { key: "reports", label: "Reports", count: 60, danger: true },
-];
+
 
 export function ProfileTabs({
   overview,
   photos,
   businessInfo,
   reports,
+  photoCount,
+  reportCount,
 }: {
   overview: React.ReactNode;
   photos: React.ReactNode;
   businessInfo: React.ReactNode;
   reports: React.ReactNode;
+  photoCount: number;
+  reportCount: number;
 }) {
+  const tabs: Tab[] = [
+    { key: "overview", label: "Overview" },
+    { key: "photos", label: "Photos", count: photoCount, countClassName: "text-emerald-600" },
+    { key: "business-info", label: "Business Info" },
+    { key: "reports", label: "Reports", count: reportCount, danger: true },
+  ];
   const searchParams = useSearchParams();
   const requested = searchParams.get("tab");
   const initial = tabs.some((t) => t.key === requested) ? (requested as string) : "overview";

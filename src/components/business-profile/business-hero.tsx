@@ -1,4 +1,3 @@
-import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { StarRating } from "../ui/star-rating";
 import { Badge } from "../ui/badge";
@@ -9,7 +8,7 @@ export interface BusinessHeroData {
   location: string;
   rating: number;
   reviewCount: number;
-  photo: StaticImageData;
+  photoUrl: string | null;
   verified: boolean;
   featured: boolean;
   socials: string[];
@@ -27,7 +26,12 @@ export function BusinessHero({
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
       <div className="relative h-[236px] flex-1 overflow-hidden rounded-2xl">
-        <Image src={business.photo} alt={business.name} fill className="object-cover" />
+        {business.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- remote Supabase storage URL
+          <img src={business.photoUrl} alt={business.name} className="size-full object-cover" />
+        ) : (
+          <div className="size-full bg-[#1a1a1a]" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
         <Link
           href={photosHref}

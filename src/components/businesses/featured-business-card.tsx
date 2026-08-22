@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Star, X, Plus, CheckCircle2 } from "lucide-react";
 import type { Business } from "./types";
 
@@ -38,7 +37,12 @@ export function FeaturedBusinessCard({
           <div className="flex flex-wrap gap-3">
             {featured.map((business) => (
               <div key={business.id} className="relative h-[100px] w-[180px] shrink-0 overflow-hidden rounded-xl">
-                <Image src={business.photo} alt={business.name} fill className="object-cover" />
+                {business.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- remote Supabase storage URL
+                  <img src={business.photoUrl} alt={business.name} className="size-full object-cover" />
+                ) : (
+                  <div className="size-full bg-[#2a2a2a]" />
+                )}
                 <div className="absolute inset-0 bg-black/50" />
                 <button
                   type="button"

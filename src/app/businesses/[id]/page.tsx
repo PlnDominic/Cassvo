@@ -1,65 +1,27 @@
+import { notFound } from "next/navigation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
 import { InfoBar } from "@/components/business-profile/info-bar";
-import { BusinessHero, type BusinessHeroData } from "@/components/business-profile/business-hero";
+import { BusinessHero } from "@/components/business-profile/business-hero";
 import { ProfileTabs } from "@/components/business-profile/profile-tabs";
 import { OverviewTab } from "@/components/business-profile/overview-tab";
 import { PhotosTab } from "@/components/business-profile/photos-tab";
-import { BusinessInfoTab, type BusinessInfoData } from "@/components/business-profile/business-info-tab";
-import { ReportsTab, type Report } from "@/components/business-profile/reports-tab";
-import { Avatar } from "@/components/dashboard/avatar";
-import skyLounge from "../../../../public/images/dashboard/photo-sky-lounge.png";
-import photoBusiness1 from "../../../../public/images/dashboard/photo-business-1.png";
-import photoBusiness2 from "../../../../public/images/dashboard/photo-business-2.png";
+import { BusinessInfoTab } from "@/components/business-profile/business-info-tab";
+import { ReportsTab } from "@/components/business-profile/reports-tab";
+import { getBusiness } from "@/lib/data/businesses";
+import { getBusinessReports } from "@/lib/data/reports";
+import { formatDate, formatNumber } from "@/lib/format";
 
-const business: BusinessHeroData = {
-  name: "Sky Lounge",
-  category: "NightLife",
-  location: "East Legon, Accra",
-  rating: 4.8,
-  reviewCount: 128,
-  photo: skyLounge,
-  verified: true,
-  featured: true,
-  socials: ["IG", "FB", "X"],
-};
-
-const owner = { name: "Kwame D.", lastActive: "2mins ago" };
-
-const contactInfo = [
-  { label: "Business Type", value: "Lounge & Bar" },
-  { label: "Phone", value: "+233 20 125 4567" },
-  { label: "Email", value: "info@skylounge.com" },
-  { label: "Website", value: "www.skylounge.com" },
-  { label: "Open Hours", value: "5:00 PM – 2:00 AM" },
-];
-
-const about =
-  "Sky Lounge is a sophisticated lounge in the Greater Accra region of Ghana. Specifically located at Osu\nWe are known for or excellence in customer service, clean environments and …";
-
-const address = "15 Third Street Osu, Accra";
-const mapQuery = "15 Third Street, Osu, Accra, Ghana";
-
-const businessInfoData: BusinessInfoData = {
-  legalName: "Sky Lounge Ventures Ltd.",
-  registrationNumber: "BN-2021-884213",
-  category: "Lounge & Bar",
-  address: "12 Lagos Ave, Osu",
-  city: "Accra",
-  region: "Greater Accra",
-  taxId: "TIN-C0119284X",
-  dateRegistered: "1st July, 2021",
-};
-
-const reports: Report[] = [
-  { reporter: "Ella M", reason: "Suspicious review activity", date: "2 days ago", status: "Pending" },
-  { reporter: "Kwame D.", reason: "Incorrect opening hours", date: "5 days ago", status: "Resolved" },
-  { reporter: "Angela A.", reason: "Duplicate listing", date: "1 week ago", status: "Dismissed" },
-  { reporter: "Abena K.", reason: "Outdated contact information", date: "2 weeks ago", status: "Resolved" },
-];
+export const dynamic = "force-dynamic";
 
 export default async function BusinessProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const business = await getBusiness(id);
+  if (!business) notFound();
+
+  const reports = await getBusinessReports(id);
+
+  const address = [business.address, business.cityArea].filter(Boolean).join(", ") || "—";
 
   return (
     <DashboardShell title="Business Profile" backHref="/businesses">
@@ -68,24 +30,14 @@ export default async function BusinessProfilePage({ params }: { params: Promise<
 
         <InfoBar
           items={[
-            {
-              label: "Business Owner",
-              value: (
-                <div className="flex items-center gap-2">
-                  <Avatar name={owner.name} size={32} />
-                  <span>
-                    {owner.name} <span className="font-normal text-[#939393]">{owner.lastActive}</span>
-                  </span>
-                </div>
-              ),
-            },
-            { label: "Member Since", value: "1st July" },
-            { label: "Total Reviews", value: "564" },
+            { label: "Category", value: business.category },
+            { label: "Region", value: business.region ?? "—" },
+            { label: "Total Reviews", value: formatNumber(business.reviewCount) },
             {
               label: "Status",
               value: (
                 <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                  Active Business
+                  {business.status === "confirmed" ? "Active Business" : business.status}
                 </span>
               ),
             },
@@ -93,17 +45,57 @@ export default async function BusinessProfilePage({ params }: { params: Promise<
         />
 
         <BusinessHero
-          business={business}
+          business={{
+            name: business.name,
+            category: business.category,
+            location: business.cityArea ?? "—",
+            rating: business.rating ?? 0,
+            reviewCount: business.reviewCount,
+            photoUrl: business.coverImageUrl,
+            verified: business.status === "confirmed",
+            featured: business.featured,
+            socials: [],
+          }}
           reviewsHref={`/businesses/${id}/reviews`}
           photosHref={`/businesses/${id}?tab=photos`}
         />
 
-        <InfoBar items={contactInfo} />
+        <InfoBar
+          items={[
+            { label: "Business Type", value: business.businessType ?? "—" },
+            { label: "Phone", value: business.phone ?? "—" },
+            { label: "Email", value: business.email ?? "—" },
+            { label: "Website", value: business.website ?? "—" },
+            { label: "Open Hours", value: business.operatingHours ?? "—" },
+          ]}
+        />
 
         <ProfileTabs
-          overview={<OverviewTab about={about} address={address} mapQuery={mapQuery} />}
-          photos={<PhotosTab photos={[skyLounge, photoBusiness1, photoBusiness2, skyLounge, photoBusiness1, photoBusiness2]} />}
-          businessInfo={<BusinessInfoTab info={businessInfoData} />}
+          photoCount={business.photos.length}
+          reportCount={reports.length}
+          overview={
+            <OverviewTab
+              about={business.description ?? "No description added yet."}
+              address={address}
+              mapQuery={address}
+              amenities={business.amenities}
+            />
+          }
+          photos={<PhotosTab photos={business.photos} />}
+          businessInfo={
+            <BusinessInfoTab
+              info={{
+                legalName: business.legalName ?? "—",
+                registrationNumber: business.registrationNumber ?? "—",
+                category: business.category,
+                address: business.address ?? "—",
+                city: business.cityArea ?? "—",
+                region: business.region ?? "—",
+                taxId: business.taxId ?? "—",
+                dateRegistered: formatDate(business.dateRegistered),
+              }}
+            />
+          }
           reports={<ReportsTab reports={reports} />}
         />
       </div>

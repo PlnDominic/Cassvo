@@ -2,24 +2,29 @@
 
 import { useState } from "react";
 
-const TABS = [
-  { key: "reviews", label: "Reviews" },
-  { key: "photos", label: "Photos", count: 1920 },
-  { key: "reports", label: "Reports", count: 14, danger: true },
-  { key: "collections", label: "Collections", count: 2547 },
-];
-
 export function UserProfileTabs({
   reviews,
   photos,
   reports,
   collections,
+  photoCount,
+  reportCount,
+  collectionCount,
 }: {
   reviews: React.ReactNode;
   photos: React.ReactNode;
   reports: React.ReactNode;
   collections: React.ReactNode;
+  photoCount: number;
+  reportCount: number;
+  collectionCount: number;
 }) {
+  const TABS = [
+    { key: "reviews", label: "Reviews" },
+    { key: "photos", label: "Photos", count: photoCount },
+    { key: "reports", label: "Reports", count: reportCount, danger: true },
+    { key: "collections", label: "Collections", count: collectionCount },
+  ];
   const [active, setActive] = useState("reviews");
 
   const content: Record<string, React.ReactNode> = { reviews, photos, reports, collections };

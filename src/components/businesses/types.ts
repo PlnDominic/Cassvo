@@ -1,5 +1,3 @@
-import type { StaticImageData } from "next/image";
-
 export type BusinessStatus = "pending" | "confirmed" | "suspended";
 
 export interface Business {
@@ -8,5 +6,6 @@ export interface Business {
   category: string;
   reviews: number | null;
   status: BusinessStatus;
-  photo: StaticImageData;
+  /** Cover image URL from Supabase storage; null when none uploaded yet. */
+  photoUrl: string | null;
 }

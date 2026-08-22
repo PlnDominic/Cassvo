@@ -34,6 +34,13 @@ export function LoginActivityTable({ rows }: { rows: LoginActivityRow[] }) {
                 </td>
               </tr>
             ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-6 py-10 text-center text-sm text-[#939393]">
+                  No login activity recorded.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

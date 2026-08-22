@@ -1,4 +1,4 @@
-import { Umbrella, Martini, BedDouble } from "lucide-react";
+import { Umbrella, Martini, BedDouble, Sparkles } from "lucide-react";
 
 interface Highlight {
   label: string;
@@ -18,20 +18,24 @@ const highlights: Highlight[] = [
   { label: "Response time", value: "2hrs 15mins", dotColor: "#14b8a6" },
 ];
 
-const amenities: Amenity[] = [
-  { label: "Outdoor Seating", icon: Umbrella },
-  { label: "Great Cocktails", icon: Martini },
-  { label: "Breakfast In Bed", icon: BedDouble },
-];
+function amenityIcon(label: string): Amenity["icon"] {
+  const lower = label.toLowerCase();
+  if (lower.includes("seat") || lower.includes("outdoor")) return Umbrella;
+  if (lower.includes("cocktail") || lower.includes("bar") || lower.includes("drink")) return Martini;
+  if (lower.includes("breakfast") || lower.includes("bed") || lower.includes("sleep")) return BedDouble;
+  return Sparkles;
+}
 
 export function OverviewTab({
   about,
   address,
   mapQuery,
+  amenities,
 }: {
   about: string;
   address: string;
   mapQuery: string;
+  amenities: string[];
 }) {
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.1fr_0.8fr_1.1fr]">
@@ -40,14 +44,21 @@ export function OverviewTab({
         <p className="whitespace-pre-line text-sm leading-relaxed text-[#606060]">{about}</p>
 
         <h3 className="mt-8 mb-4 text-lg font-medium text-[#060606]">Amenities</h3>
-        <div className="flex gap-10">
-          {amenities.map((a) => (
-            <div key={a.label} className="flex flex-col items-center gap-2 text-center">
-              <a.icon size={28} strokeWidth={1.5} className="text-[#060606]" />
-              <span className="text-xs text-[#606060]">{a.label}</span>
-            </div>
-          ))}
-        </div>
+        {amenities.length === 0 ? (
+          <p className="text-sm text-[#939393]">No amenities listed.</p>
+        ) : (
+          <div className="flex flex-wrap gap-10">
+            {amenities.map((label) => {
+              const Icon = amenityIcon(label);
+              return (
+                <div key={label} className="flex flex-col items-center gap-2 text-center">
+                  <Icon size={28} strokeWidth={1.5} className="text-[#060606]" />
+                  <span className="text-xs text-[#606060]">{label}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="lg:border-l lg:border-[#ececed] lg:pl-8">

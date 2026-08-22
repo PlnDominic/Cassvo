@@ -11,7 +11,17 @@ import { ReportQuickActions } from "./report-quick-actions";
 import type { ReportDetailData } from "./types";
 import type { ReportStatus } from "../types";
 
-export function ReportDetailBoard({ report: initialReport }: { report: ReportDetailData }) {
+export function ReportDetailBoard({
+  report: initialReport,
+  reportId,
+  moderators,
+  initialNotes,
+}: {
+  report: ReportDetailData;
+  reportId: string;
+  moderators: string[];
+  initialNotes: string;
+}) {
   const [report, setReport] = useState(initialReport);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
@@ -41,7 +51,7 @@ export function ReportDetailBoard({ report: initialReport }: { report: ReportDet
           <EvidenceCard report={report} />
           <UploadedEvidenceCard images={report.images} />
         </div>
-        <ModerationPanel report={report} />
+        <ModerationPanel report={report} reportId={reportId} moderators={moderators} initialNotes={initialNotes} />
       </div>
 
       <ReportQuickActions

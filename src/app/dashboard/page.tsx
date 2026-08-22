@@ -6,15 +6,30 @@ import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { TrendingBusinessesCard } from "@/components/dashboard/trending-businesses-card";
 import { ReviewsMapCard } from "@/components/dashboard/reviews-map-card";
 import { CategoryPerformanceCard } from "@/components/dashboard/category-performance-card";
+import { getReviewCounts } from "@/lib/data/reviews";
+import { getUserCounts } from "@/lib/data/users";
+import { getBusinessCounts } from "@/lib/data/businesses";
+import {
+  getTrendingBusinesses,
+  getMostViewedBusiness,
+  getRecentActivity,
+  getCategoryPerformance,
+} from "@/lib/data/dashboard";
+import { formatNumber } from "@/lib/format";
 
-const stats: { label: string; value: string; trend: { type: "up" | "attention"; text: string } }[] = [
-  { label: "Total Reviews", value: "40,689", trend: { type: "up", text: "8.5% Up from yesterday" } },
-  { label: "Pending Reviews", value: "40,689", trend: { type: "attention", text: "Needs attention" } },
-  { label: "Total Users", value: "40,689", trend: { type: "up", text: "8.5% Up from yesterday" } },
-  { label: "Total Businesses", value: "40,689", trend: { type: "up", text: "8.5% Up from yesterday" } },
-];
+export const dynamic = "force-dynamic";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const [reviews, users, businesses, trending, mostViewed, activity, categories] = await Promise.all([
+    getReviewCounts(),
+    getUserCounts(),
+    getBusinessCounts(),
+    getTrendingBusinesses(),
+    getMostViewedBusiness(),
+    getRecentActivity(),
+    getCategoryPerformance(),
+  ]);
+
   return (
     <DashboardShell>
       <div className="flex flex-col gap-8">
@@ -29,23 +44,28 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-          {stats.map((stat) => (
-            <StatCard key={stat.label} {...stat} />
-          ))}
+          <StatCard label="Total Reviews" value={formatNumber(reviews.total)} />
+          <StatCard
+            label="Pending Reviews"
+            value={formatNumber(reviews.pending)}
+            trend={reviews.pending > 0 ? { type: "attention", text: "Needs attention" } : undefined}
+          />
+          <StatCard label="Total Users" value={formatNumber(users.total)} />
+          <StatCard label="Total Businesses" value={formatNumber(businesses.onboarded)} />
         </div>
 
         <div className="flex flex-col gap-6 xl:flex-row xl:items-stretch">
-          <MostViewedCard />
+          <MostViewedCard business={mostViewed} />
           <TrustScoreCard />
         </div>
 
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
-          <TrendingBusinessesCard />
+          <TrendingBusinessesCard businesses={trending} />
           <ReviewsMapCard />
-          <CategoryPerformanceCard />
+          <CategoryPerformanceCard categories={categories} />
         </div>
 
-        <RecentActivity />
+        <RecentActivity activity={activity} />
       </div>
     </DashboardShell>
   );
