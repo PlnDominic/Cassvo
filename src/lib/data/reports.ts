@@ -18,7 +18,7 @@ import { one } from "./util";
  * are resolved with a manual second query rather than a select() embed.
  */
 
-async function resolveNames(supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>, ids: (string | null)[]) {
+export async function resolveNames(supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>, ids: (string | null)[]) {
   const unique = [...new Set(ids.filter((id): id is string => Boolean(id)))];
   if (unique.length === 0) return new Map<string, string>();
 

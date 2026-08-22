@@ -1,22 +1,37 @@
 import { createClient } from "@/lib/supabase/server";
 import type { NotificationItem, NotificationBadgeVariant } from "@/components/notifications/types";
 import { formatRelative } from "@/lib/format";
+import { one } from "./util";
+import { resolveNames } from "./reports";
 
 /**
- * UNVERIFIED: the real `notifications` table exists but is currently empty,
- * so its actual columns haven't been confirmed — the shape below is still
- * the one drafted before we had access to the real schema. Every query
- * here degrades to an empty result on a column mismatch rather than
- * throwing, so this is safe to ship as-is, but it should be re-checked
- * once the table has real rows (or its Table Editor columns are shared).
+ * The real `notifications` table exists but has never had a single row
+ * written to it (confirmed: content-range: 0 on a plain count, not an RLS
+ * block) — nothing in this system populates it. Rather than show a
+ * permanently-empty page, notifications are synthesized from actual
+ * platform events: new reviews, flagged reviews, general problem reports,
+ * and new businesses. There's no source for a real "system alert" or
+ * "security alert" event, so those categories stay honestly empty instead
+ * of being invented.
  */
 
-const KIND_BADGE: Record<string, { label: string; variant: NotificationBadgeVariant }> = {
-  review: { label: "Review", variant: "red" },
-  business: { label: "Business", variant: "green" },
-  user: { label: "Users", variant: "amber" },
-  system: { label: "System", variant: "amber" },
+type Kind = "review" | "flag" | "business";
+
+const KIND_META: Record<Kind, { icon: "review" | "business" | "user" | "system"; badgeLabel: string; badgeVariant: NotificationBadgeVariant }> = {
+  review: { icon: "review", badgeLabel: "Review", badgeVariant: "red" },
+  flag: { icon: "system", badgeLabel: "Flagged", badgeVariant: "amber" },
+  business: { icon: "business", badgeLabel: "Business", badgeVariant: "green" },
 };
+
+interface Event {
+  id: string;
+  kind: Kind;
+  avatarName: string;
+  title: string;
+  description: string;
+  href: string;
+  createdAt: string;
+}
 
 function isToday(timestamp: string) {
   const date = new Date(timestamp);
@@ -31,68 +46,125 @@ function isYesterday(timestamp: string) {
   return date.toDateString() === yesterday.toDateString();
 }
 
-function toItem(row: {
-  id: string;
-  kind: string;
-  title: string;
-  description: string | null;
-  href: string | null;
-  actor_name: string | null;
-  read_at: string | null;
-  created_at: string;
-}): NotificationItem {
-  const badge = KIND_BADGE[row.kind] ?? KIND_BADGE.system;
+/** Unread has no real backing (nothing tracks per-admin read state) — events from the last 24h read as unread. */
+function isUnread(createdAt: string) {
+  return Date.now() - new Date(createdAt).getTime() < 24 * 60 * 60 * 1000;
+}
+
+async function getRecentEvents(limit: number): Promise<Event[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const [reviews, reviewReports, problemReports, businesses] = await Promise.all([
+    supabase
+      .from("reviews")
+      .select("id, content, business_id, created_at, author:profiles!user_id (full_name), business:businesses!business_id (name)")
+      .order("created_at", { ascending: false })
+      .limit(limit),
+    supabase
+      .from("review_reports")
+      .select("id, reason, reporter_id, created_at")
+      .order("created_at", { ascending: false })
+      .limit(limit),
+    supabase
+      .from("problem_reports")
+      .select("id, message, contact_email, user_id, created_at")
+      .order("created_at", { ascending: false })
+      .limit(limit),
+    supabase.from("businesses").select("id, name, created_at").order("created_at", { ascending: false }).limit(limit),
+  ]);
+
+  const names = await resolveNames(supabase, [
+    ...(reviewReports.data ?? []).map((r) => r.reporter_id),
+    ...(problemReports.data ?? []).map((r) => r.user_id),
+  ]);
+
+  const events: Event[] = [];
+
+  for (const row of reviews.data ?? []) {
+    const author = one<{ full_name: string }>(row.author);
+    const business = one<{ name: string }>(row.business);
+    events.push({
+      id: `review-${row.id}`,
+      kind: "review",
+      avatarName: author?.full_name ?? "Someone",
+      title: "New Review Submitted",
+      description: business ? `${author?.full_name ?? "Someone"} reviewed ${business.name}` : "New review submitted",
+      href: "/review-moderation",
+      createdAt: row.created_at,
+    });
+  }
+
+  for (const row of reviewReports.data ?? []) {
+    events.push({
+      id: `review-report-${row.id}`,
+      kind: "flag",
+      avatarName: names.get(row.reporter_id) ?? "Someone",
+      title: "Review Flagged",
+      description: row.reason,
+      href: `/reports/review-${row.id}`,
+      createdAt: row.created_at,
+    });
+  }
+
+  for (const row of problemReports.data ?? []) {
+    events.push({
+      id: `problem-report-${row.id}`,
+      kind: "flag",
+      avatarName: names.get(row.user_id) ?? row.contact_email ?? "Someone",
+      title: "Problem Reported",
+      description: row.message,
+      href: `/reports/problem-${row.id}`,
+      createdAt: row.created_at,
+    });
+  }
+
+  for (const row of businesses.data ?? []) {
+    events.push({
+      id: `business-${row.id}`,
+      kind: "business",
+      avatarName: row.name,
+      title: "New Business Registration",
+      description: `${row.name} was added to the platform`,
+      href: `/businesses/${row.id}`,
+      createdAt: row.created_at,
+    });
+  }
+
+  return events.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, limit);
+}
+
+function toItem(event: Event): NotificationItem {
+  const meta = KIND_META[event.kind];
   return {
-    id: row.id,
-    avatarName: row.actor_name ?? row.title,
-    title: row.title,
-    description: row.description ?? "",
-    badgeLabel: badge.label,
-    badgeVariant: badge.variant,
-    time: formatRelative(row.created_at),
-    href: row.href ?? "/notifications",
-    unread: row.read_at === null,
+    id: event.id,
+    avatarName: event.avatarName,
+    title: event.title,
+    description: event.description,
+    badgeLabel: meta.badgeLabel,
+    badgeVariant: meta.badgeVariant,
+    time: formatRelative(event.createdAt),
+    href: event.href,
+    unread: isUnread(event.createdAt),
   };
 }
 
 export async function getNotifications(): Promise<{ today: NotificationItem[]; yesterday: NotificationItem[] }> {
-  const supabase = await createClient();
-  if (!supabase) return { today: [], yesterday: [] };
-
-  const { data, error } = await supabase
-    .from("notifications")
-    .select("id, kind, title, description, href, actor_name, read_at, created_at")
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  if (error) {
-    console.error("getNotifications:", error.message);
-    return { today: [], yesterday: [] };
-  }
-
-  const rows = data ?? [];
+  const events = await getRecentEvents(50);
   return {
-    today: rows.filter((r) => isToday(r.created_at)).map(toItem),
-    yesterday: rows.filter((r) => isYesterday(r.created_at)).map(toItem),
+    today: events.filter((e) => isToday(e.createdAt)).map(toItem),
+    yesterday: events.filter((e) => isYesterday(e.createdAt)).map(toItem),
   };
 }
 
 export async function getNotificationCounts() {
-  const supabase = await createClient();
-  if (!supabase) return { total: 0, unread: 0, highPriority: 0, systemAlerts: 0 };
-
-  const [total, unread, review, system] = await Promise.all([
-    supabase.from("notifications").select("id", { count: "exact", head: true }),
-    supabase.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null),
-    supabase.from("notifications").select("id", { count: "exact", head: true }).eq("kind", "review"),
-    supabase.from("notifications").select("id", { count: "exact", head: true }).eq("kind", "system"),
-  ]);
-
+  const events = await getRecentEvents(50);
   return {
-    total: total.count ?? 0,
-    unread: unread.count ?? 0,
-    highPriority: review.count ?? 0,
-    systemAlerts: system.count ?? 0,
+    total: events.length,
+    unread: events.filter((e) => isUnread(e.createdAt)).length,
+    highPriority: events.filter((e) => e.kind === "flag").length,
+    // No real source for system-level alerts (deploys, outages, etc.).
+    systemAlerts: 0,
   };
 }
 
@@ -107,26 +179,13 @@ export interface DropdownNotification {
 
 /** The most recent notifications, for the topbar bell dropdown. */
 export async function getRecentNotifications(limit = 5): Promise<DropdownNotification[]> {
-  const supabase = await createClient();
-  if (!supabase) return [];
-
-  const { data, error } = await supabase
-    .from("notifications")
-    .select("id, kind, title, description, href, read_at, created_at")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    console.error("getRecentNotifications:", error.message);
-    return [];
-  }
-
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    kind: row.kind,
-    text: row.description ?? row.title,
-    time: formatRelative(row.created_at),
-    href: row.href ?? "/notifications",
-    unread: row.read_at === null,
+  const events = await getRecentEvents(limit);
+  return events.map((event) => ({
+    id: event.id,
+    kind: KIND_META[event.kind].icon,
+    text: event.description,
+    time: formatRelative(event.createdAt),
+    href: event.href,
+    unread: isUnread(event.createdAt),
   }));
 }
