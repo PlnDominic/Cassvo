@@ -5,7 +5,7 @@ import statCardBg from "../../../public/images/dashboard/stat-card-bg.png";
 interface StatCardProps {
   label: string;
   value: string;
-  trend: { type: "up"; text: string } | { type: "attention"; text: string };
+  trend?: { type: "up"; text: string } | { type: "attention"; text: string };
   iconColor?: "red" | "green";
 }
 
@@ -28,7 +28,9 @@ export function StatCard({ label, value, trend, iconColor = "red" }: StatCardPro
           <p className="text-base font-medium text-white/70">{label}</p>
           <p className="mt-2 text-[32px] leading-none text-white">{value}</p>
         </div>
-        {trend.type === "up" ? (
+        {!trend ? (
+          <p className="text-[16px] text-[#e6e6e6]">–</p>
+        ) : trend.type === "up" ? (
           <div className="flex items-center gap-1.5 text-[16px] tracking-[0.01em]">
             <TrendingUp size={20} className="text-[#34c759]" />
             <span className="font-medium text-[#34c759]">{trend.text.split(" ")[0]}</span>
