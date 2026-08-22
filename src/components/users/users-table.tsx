@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";
 import { Avatar } from "../dashboard/avatar";
 import { UserStatusBadge } from "./user-status-badge";
@@ -22,13 +23,13 @@ export function UsersTable({ users }: { users: UserRow[] }) {
           {users.map((user) => (
             <tr key={user.id} className="border-b border-[#ececed] last:border-b-0">
               <td className="px-6 py-4">
-                <div className="flex items-center gap-3">
+                <Link href={`/users/${user.id}`} className="flex items-center gap-3 hover:opacity-80">
                   <Avatar name={user.name} size={40} />
                   <div>
                     <p className="font-medium text-[#060606]">{user.name}</p>
                     <p className="text-xs text-[#939393]">{user.email}</p>
                   </div>
-                </div>
+                </Link>
               </td>
               <td className="px-6 py-4 text-[#606060]">{user.phone}</td>
               <td className="px-6 py-4 text-[#606060]">{user.reviewsPosted ?? "–"}</td>
