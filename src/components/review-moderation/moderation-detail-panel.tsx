@@ -1,4 +1,4 @@
-import { Check, X } from "lucide-react";
+import { Check, Loader2, TriangleAlert, X } from "lucide-react";
 import { Avatar } from "../dashboard/avatar";
 import { StarRating } from "../ui/star-rating";
 import type { ModerationReview } from "./types";
@@ -7,10 +7,14 @@ export function ModerationDetailPanel({
   review,
   onApprove,
   onReject,
+  pending,
+  error,
 }: {
   review: ModerationReview;
   onApprove: () => void;
   onReject: () => void;
+  pending: boolean;
+  error: string | null;
 }) {
   return (
     <div className="rounded-2xl bg-white p-6 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
@@ -99,21 +103,27 @@ export function ModerationDetailPanel({
         <button
           type="button"
           onClick={onApprove}
-          disabled={review.status === "approved"}
+          disabled={pending || review.status === "approved"}
           className="flex items-center gap-2 rounded-xl bg-brand-red px-6 py-3 text-sm font-medium text-white disabled:opacity-50"
         >
-          <Check size={16} />
+          {pending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
           Approve
         </button>
         <button
           type="button"
           onClick={onReject}
-          disabled={review.status === "rejected"}
+          disabled={pending || review.status === "rejected"}
           className="flex items-center gap-2 rounded-xl border border-[#ececed] px-6 py-3 text-sm font-medium text-[#060606] disabled:opacity-50"
         >
-          <X size={16} />
+          {pending ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
           Reject
         </button>
+        {error && (
+          <span className="flex items-center gap-1.5 text-sm font-medium text-brand-red">
+            <TriangleAlert size={14} />
+            {error}
+          </span>
+        )}
       </div>
     </div>
   );

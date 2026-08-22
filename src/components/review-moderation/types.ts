@@ -13,6 +13,7 @@ export interface ModerationReview {
   rating: number;
   reviewCount: number;
   date: string;
+  createdAt: string;
   price: number;
   crowdLevel: string;
   text: string;

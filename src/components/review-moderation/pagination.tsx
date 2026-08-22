@@ -1,17 +1,27 @@
 "use client";
 
-import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export function Pagination({ pageCount = 16 }: { pageCount?: number }) {
-  const [page, setPage] = useState(1);
-  const visiblePages = [1, 2, 3];
+export function Pagination({
+  page,
+  pageCount,
+  onChange,
+}: {
+  page: number;
+  pageCount: number;
+  onChange: (page: number) => void;
+}) {
+  if (pageCount <= 1) return null;
+
+  // Windowed page numbers around the current page, capped at 5 buttons.
+  const start = Math.max(1, Math.min(page - 2, pageCount - 4));
+  const visiblePages = Array.from({ length: Math.min(5, pageCount) }, (_, i) => start + i);
 
   return (
     <div className="flex items-center justify-center gap-2">
       <button
         type="button"
-        onClick={() => setPage((p) => Math.max(1, p - 1))}
+        onClick={() => onChange(Math.max(1, page - 1))}
         aria-label="Previous page"
         className="flex size-8 items-center justify-center rounded-full border border-[#ececed] text-[#060606] disabled:opacity-40"
         disabled={page === 1}
@@ -23,7 +33,7 @@ export function Pagination({ pageCount = 16 }: { pageCount?: number }) {
         <button
           key={p}
           type="button"
-          onClick={() => setPage(p)}
+          onClick={() => onChange(p)}
           className={`flex size-8 items-center justify-center rounded-full text-sm font-medium ${
             page === p ? "border border-brand-red text-brand-red" : "text-[#060606]"
           }`}
@@ -32,21 +42,22 @@ export function Pagination({ pageCount = 16 }: { pageCount?: number }) {
         </button>
       ))}
 
-      <span className="px-1 text-sm text-[#939393]">…</span>
+      {visiblePages[visiblePages.length - 1] < pageCount && (
+        <>
+          <span className="px-1 text-sm text-[#939393]">…</span>
+          <button
+            type="button"
+            onClick={() => onChange(pageCount)}
+            className="flex size-8 items-center justify-center rounded-full text-sm font-medium text-[#060606]"
+          >
+            {pageCount}
+          </button>
+        </>
+      )}
 
       <button
         type="button"
-        onClick={() => setPage(pageCount)}
-        className={`flex size-8 items-center justify-center rounded-full text-sm font-medium ${
-          page === pageCount ? "border border-brand-red text-brand-red" : "text-[#060606]"
-        }`}
-      >
-        {pageCount}
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+        onClick={() => onChange(Math.min(pageCount, page + 1))}
         aria-label="Next page"
         className="flex size-8 items-center justify-center rounded-full border border-[#ececed] text-[#060606] disabled:opacity-40"
         disabled={page === pageCount}

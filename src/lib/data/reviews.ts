@@ -17,6 +17,7 @@ export interface ReviewRecord {
   rating: number;
   reviewCount: number;
   date: string;
+  createdAt: string;
   priceLevel: number;
   crowdLevel: string;
   text: string;
@@ -27,7 +28,7 @@ export interface ReviewRecord {
   notHelpful: number;
 }
 
-const REVIEW_SELECT = `
+const REVIEW_FIELDS = `
   id, rating, content, price_rating, busy_status, loved_tags, is_pending, is_verified,
   upvotes_count, created_at, images,
   author:profiles!user_id (id, full_name, location, avatar_url),
@@ -35,11 +36,20 @@ const REVIEW_SELECT = `
 `;
 
 /**
- * The real schema has no review status enum — only `is_pending`. There is
- * no "rejected" state at all, so that bucket is always empty rather than
- * fabricated. A review that isn't pending is treated as approved.
+ * `is_rejected` is a proposed additive column (see
+ * supabase/proposed/004_review_moderation.sql) that may not exist yet on
+ * every environment. Select it optimistically, but fall back to the
+ * columns that are guaranteed to exist rather than letting the whole
+ * reviews list go blank if the migration hasn't been run yet.
  */
-function deriveStatus(isPending: boolean | null): ModerationStatus {
+const REVIEW_SELECT = `${REVIEW_FIELDS.trim()}, is_rejected`;
+
+export function isMissingColumnError(error: { code?: string; message?: string } | null) {
+  return error?.code === "42703" || error?.code === "PGRST204" || Boolean(error?.message?.includes("is_rejected"));
+}
+
+function deriveStatus(isPending: boolean | null, isRejected: boolean | null | undefined): ModerationStatus {
+  if (isRejected) return "rejected";
   return isPending ? "pending" : "approved";
 }
 
@@ -80,12 +90,13 @@ function toRecord(row: any): ReviewRecord {
     rating: Number(row.rating ?? 0),
     reviewCount: business?.reviews_count ?? 0,
     date: formatDate(row.created_at),
+    createdAt: row.created_at,
     priceLevel: countCedis(row.price_rating),
     crowdLevel: row.busy_status ?? "—",
     text: row.content,
     photos: row.images ?? [],
     tags: row.loved_tags ?? [],
-    status: deriveStatus(row.is_pending),
+    status: deriveStatus(row.is_pending, row.is_rejected),
     helpful: row.upvotes_count ?? 0,
     // The real schema has no downvote count.
     notHelpful: 0,
@@ -101,6 +112,19 @@ export async function getReviews(businessId?: string): Promise<ReviewRecord[]> {
   if (businessId) query = query.eq("business_id", businessId);
 
   const { data, error } = await query;
+
+  if (error && isMissingColumnError(error)) {
+    // 004_review_moderation.sql hasn't been run yet — retry without is_rejected.
+    let fallback = supabase.from("reviews").select(REVIEW_FIELDS).order("created_at", { ascending: false });
+    if (businessId) fallback = fallback.eq("business_id", businessId);
+    const retry = await fallback;
+    if (retry.error) {
+      console.error("getReviews:", retry.error.message);
+      return [];
+    }
+    return (retry.data ?? []).map(toRecord);
+  }
+
   if (error) {
     console.error("getReviews:", error.message);
     return [];
@@ -112,11 +136,39 @@ export async function getReviewCounts() {
   const supabase = await createClient();
   if (!supabase) return { total: 0, pending: 0, approved: 0, rejected: 0, averageRating: null as number | null };
 
-  const [total, pending, approved, ratings] = await Promise.all([
+  // `count: "exact", head: true` requests carry no response body even on
+  // failure, so a missing-column error never reaches error.code the way a
+  // normal select does. Check with one cheap real select first instead of
+  // relying on parsing a HEAD response's (nonexistent) error body.
+  const canary = await supabase.from("reviews").select("is_rejected").limit(1);
+  const hasIsRejected = !isMissingColumnError(canary.error);
+
+  if (!hasIsRejected) {
+    const [total, pending, approved, ratings] = await Promise.all([
+      supabase.from("reviews").select("id", { count: "exact", head: true }),
+      supabase.from("reviews").select("id", { count: "exact", head: true }).eq("is_pending", true),
+      supabase.from("reviews").select("id", { count: "exact", head: true }).eq("is_pending", false),
+      supabase.from("reviews").select("rating").eq("is_pending", false),
+    ]);
+    const rows = ratings.data ?? [];
+    const averageRating = rows.length
+      ? Math.round((rows.reduce((sum, r) => sum + Number(r.rating), 0) / rows.length) * 10) / 10
+      : null;
+    return {
+      total: total.count ?? 0,
+      pending: pending.count ?? 0,
+      approved: approved.count ?? 0,
+      rejected: 0,
+      averageRating,
+    };
+  }
+
+  const [total, pending, approved, rejected, ratings] = await Promise.all([
     supabase.from("reviews").select("id", { count: "exact", head: true }),
-    supabase.from("reviews").select("id", { count: "exact", head: true }).eq("is_pending", true),
-    supabase.from("reviews").select("id", { count: "exact", head: true }).eq("is_pending", false),
-    supabase.from("reviews").select("rating").eq("is_pending", false),
+    supabase.from("reviews").select("id", { count: "exact", head: true }).eq("is_pending", true).eq("is_rejected", false),
+    supabase.from("reviews").select("id", { count: "exact", head: true }).eq("is_pending", false).eq("is_rejected", false),
+    supabase.from("reviews").select("id", { count: "exact", head: true }).eq("is_rejected", true),
+    supabase.from("reviews").select("rating").eq("is_pending", false).eq("is_rejected", false),
   ]);
 
   const rows = ratings.data ?? [];
@@ -128,8 +180,7 @@ export async function getReviewCounts() {
     total: total.count ?? 0,
     pending: pending.count ?? 0,
     approved: approved.count ?? 0,
-    // The real schema has no rejected/removed state for reviews.
-    rejected: 0,
+    rejected: rejected.count ?? 0,
     averageRating,
   };
 }

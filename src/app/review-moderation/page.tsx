@@ -24,6 +24,7 @@ export default async function ReviewModerationPage() {
     rating: r.rating,
     reviewCount: r.reviewCount,
     date: r.date,
+    createdAt: r.createdAt,
     price: r.priceLevel,
     crowdLevel: r.crowdLevel,
     text: r.text,
