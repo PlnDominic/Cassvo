@@ -1,8 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Business, BusinessStatus } from "@/components/businesses/types";
 import type { BusinessDraft } from "@/components/businesses/drafts/types";
-import { formatRelative } from "@/lib/format";
 import { one } from "./util";
+
+/**
+ * The real `businesses` table has no status enum — only `is_verified`. We
+ * derive the dashboard's pending/confirmed distinction from that; there is
+ * no "suspended" state in the schema, so that bucket is always empty rather
+ * than fabricated.
+ */
+function deriveStatus(isVerified: boolean | null): BusinessStatus {
+  return isVerified ? "confirmed" : "pending";
+}
 
 export async function getBusinesses(): Promise<Business[]> {
   const supabase = await createClient();
@@ -10,8 +19,7 @@ export async function getBusinesses(): Promise<Business[]> {
 
   const { data, error } = await supabase
     .from("businesses")
-    .select("id, slug, name, category, status, cover_image_url, business_stats(review_count)")
-    .eq("is_draft", false)
+    .select("id, name, is_verified, cover_image, reviews_count, category:categories(title)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -20,12 +28,12 @@ export async function getBusinesses(): Promise<Business[]> {
   }
 
   return (data ?? []).map((row) => ({
-    id: row.slug ?? row.id,
+    id: row.id,
     name: row.name,
-    category: row.category,
-    status: row.status as BusinessStatus,
-    reviews: one<{ review_count: number }>(row.business_stats)?.review_count ?? null,
-    photoUrl: row.cover_image_url,
+    category: one<{ title: string }>(row.category)?.title ?? "Uncategorized",
+    status: deriveStatus(row.is_verified),
+    reviews: row.reviews_count,
+    photoUrl: row.cover_image,
   }));
 }
 
@@ -35,39 +43,25 @@ export async function getFeaturedBusinessIds(): Promise<string[]> {
 
   const { data, error } = await supabase
     .from("businesses")
-    .select("id, slug")
-    .eq("featured", true)
-    .order("featured_at", { ascending: false });
+    .select("id")
+    .eq("is_featured", true)
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("getFeaturedBusinessIds:", error.message);
     return [];
   }
-  return (data ?? []).map((row) => row.slug ?? row.id);
+  return (data ?? []).map((row) => row.id);
 }
 
+/**
+ * The real schema has no onboarding-draft concept (no `is_draft` /
+ * `draft_progress` / `draft_state` columns) — every business row is a
+ * published business. This intentionally always returns empty rather than
+ * querying columns that don't exist.
+ */
 export async function getBusinessDrafts(): Promise<BusinessDraft[]> {
-  const supabase = await createClient();
-  if (!supabase) return [];
-
-  const { data, error } = await supabase
-    .from("businesses")
-    .select("id, slug, name, draft_progress, draft_state, updated_at")
-    .eq("is_draft", true)
-    .order("updated_at", { ascending: false });
-
-  if (error) {
-    console.error("getBusinessDrafts:", error.message);
-    return [];
-  }
-
-  return (data ?? []).map((row) => ({
-    id: row.slug ?? row.id,
-    name: row.name,
-    progress: row.draft_progress ?? 0,
-    lastUpdated: formatRelative(row.updated_at),
-    status: (row.draft_state ?? "incomplete") as BusinessDraft["status"],
-  }));
+  return [];
 }
 
 export interface BusinessDetail {
@@ -98,20 +92,18 @@ export interface BusinessDetail {
   reviewCount: number;
 }
 
-export async function getBusiness(slugOrId: string): Promise<BusinessDetail | null> {
+export async function getBusiness(id: string): Promise<BusinessDetail | null> {
   const supabase = await createClient();
   if (!supabase) return null;
 
   const { data, error } = await supabase
     .from("businesses")
     .select(
-      `id, slug, name, category, business_type, description, status, address, city_area, region,
-       phone, email, website, operating_hours, price_level, amenities, legal_name,
-       registration_number, tax_id, date_registered, cover_image_url, logo_url, featured,
-       business_photos(url, position),
-       business_stats(review_count, average_rating)`
+      `id, name, about, is_verified, address, location, phone, website, working_hours,
+       amenities, images, cover_image, is_featured, rating, reviews_count,
+       category:categories(title)`
     )
-    .or(`slug.eq.${slugOrId},id.eq.${slugOrId}`)
+    .eq("id", id)
     .maybeSingle();
 
   if (error || !data) {
@@ -119,37 +111,40 @@ export async function getBusiness(slugOrId: string): Promise<BusinessDetail | nu
     return null;
   }
 
-  const stats = one<{ review_count: number; average_rating: number | null }>(data.business_stats);
-  const photos = ((data.business_photos ?? []) as { url: string; position: number }[])
-    .sort((a, b) => a.position - b.position)
-    .map((p) => p.url);
-
   return {
-    id: data.slug ?? data.id,
+    id: data.id,
     name: data.name,
-    category: data.category,
-    businessType: data.business_type,
-    description: data.description,
-    status: data.status as BusinessStatus,
+    category: one<{ title: string }>(data.category)?.title ?? "Uncategorized",
+    // Not present on the real schema — the app doesn't distinguish a
+    // "business type" separate from category.
+    businessType: null,
+    description: data.about,
+    status: deriveStatus(data.is_verified),
     address: data.address,
-    cityArea: data.city_area,
-    region: data.region,
+    // The real schema stores one free-text `location` field rather than a
+    // separate city/region pair.
+    cityArea: data.location,
+    region: null,
     phone: data.phone,
-    email: data.email,
+    // Not present on the real schema — businesses have no email column.
+    email: null,
     website: data.website,
-    operatingHours: data.operating_hours,
-    priceLevel: data.price_level,
+    operatingHours: data.working_hours,
+    // `price_range`'s real shape is unconfirmed and unused by the UI today.
+    priceLevel: null,
     amenities: data.amenities ?? [],
-    legalName: data.legal_name,
-    registrationNumber: data.registration_number,
-    taxId: data.tax_id,
-    dateRegistered: data.date_registered,
-    coverImageUrl: data.cover_image_url,
-    logoUrl: data.logo_url,
-    featured: data.featured,
-    photos,
-    rating: stats?.average_rating ?? null,
-    reviewCount: stats?.review_count ?? 0,
+    // Legal/registration fields don't exist on the real schema.
+    legalName: null,
+    registrationNumber: null,
+    taxId: null,
+    dateRegistered: null,
+    coverImageUrl: data.cover_image,
+    // No separate logo column — the app only stores a cover image.
+    logoUrl: null,
+    featured: data.is_featured,
+    photos: data.images ?? [],
+    rating: data.rating,
+    reviewCount: data.reviews_count,
   };
 }
 
@@ -157,17 +152,17 @@ export async function getBusinessCounts() {
   const supabase = await createClient();
   if (!supabase) return { onboarded: 0, premium: 0, suspended: 0, underReview: 0 };
 
-  const [onboarded, featured, suspended, pending] = await Promise.all([
-    supabase.from("businesses").select("id", { count: "exact", head: true }).eq("is_draft", false),
-    supabase.from("businesses").select("id", { count: "exact", head: true }).eq("featured", true),
-    supabase.from("businesses").select("id", { count: "exact", head: true }).eq("status", "suspended"),
-    supabase.from("businesses").select("id", { count: "exact", head: true }).eq("status", "pending"),
+  const [total, featured, unverified] = await Promise.all([
+    supabase.from("businesses").select("id", { count: "exact", head: true }),
+    supabase.from("businesses").select("id", { count: "exact", head: true }).eq("is_featured", true),
+    supabase.from("businesses").select("id", { count: "exact", head: true }).eq("is_verified", false),
   ]);
 
   return {
-    onboarded: onboarded.count ?? 0,
+    onboarded: total.count ?? 0,
     premium: featured.count ?? 0,
-    suspended: suspended.count ?? 0,
-    underReview: pending.count ?? 0,
+    // The real schema has no suspension state.
+    suspended: 0,
+    underReview: unverified.count ?? 0,
   };
 }

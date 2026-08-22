@@ -17,8 +17,8 @@ export async function getTrendingBusinesses(limit = 4): Promise<TrendingBusiness
 
   const { data, error } = await supabase
     .from("businesses")
-    .select("id, slug, name, category, cover_image_url, business_stats(review_count, average_rating)")
-    .eq("status", "confirmed")
+    .select("id, name, rating, reviews_count, cover_image, category:categories(title)")
+    .order("reviews_count", { ascending: false })
     .limit(limit);
 
   if (error) {
@@ -26,54 +26,46 @@ export async function getTrendingBusinesses(limit = 4): Promise<TrendingBusiness
     return [];
   }
 
-  return (data ?? [])
-    .map((row) => {
-      const stats = one<{ review_count: number; average_rating: number | null }>(row.business_stats);
-      return {
-        id: row.slug ?? row.id,
-        name: row.name,
-        category: row.category,
-        rating: stats?.average_rating ?? 0,
-        reviewCount: stats?.review_count ?? 0,
-        photoUrl: row.cover_image_url,
-      };
-    })
-    .sort((a, b) => b.reviewCount - a.reviewCount);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    category: one<{ title: string }>(row.category)?.title ?? "Uncategorized",
+    rating: row.rating ?? 0,
+    reviewCount: row.reviews_count ?? 0,
+    photoUrl: row.cover_image,
+  }));
 }
 
-/** The most-reviewed confirmed business, for the dashboard hero card. */
-export async function getMostViewedBusiness(): Promise<TrendingBusiness & { cityArea: string | null; crowdLevel: string | null } | null> {
+/** The most-reviewed business, for the dashboard hero card. */
+export async function getMostViewedBusiness(): Promise<
+  (TrendingBusiness & { cityArea: string | null; crowdLevel: string | null }) | null
+> {
   const supabase = await createClient();
   if (!supabase) return null;
 
   const { data, error } = await supabase
     .from("businesses")
-    .select("id, slug, name, category, city_area, cover_image_url, business_stats(review_count, average_rating)")
-    .eq("status", "confirmed")
-    .limit(20);
+    .select("id, name, rating, reviews_count, location, cover_image, category:categories(title)")
+    .order("reviews_count", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-  if (error || !data?.length) {
+  if (error || !data) {
     if (error) console.error("getMostViewedBusiness:", error.message);
     return null;
   }
 
-  const ranked = data
-    .map((row) => {
-      const stats = one<{ review_count: number; average_rating: number | null }>(row.business_stats);
-      return {
-        id: row.slug ?? row.id,
-        name: row.name,
-        category: row.category,
-        cityArea: row.city_area,
-        crowdLevel: null,
-        rating: stats?.average_rating ?? 0,
-        reviewCount: stats?.review_count ?? 0,
-        photoUrl: row.cover_image_url,
-      };
-    })
-    .sort((a, b) => b.reviewCount - a.reviewCount);
-
-  return ranked[0] ?? null;
+  return {
+    id: data.id,
+    name: data.name,
+    category: one<{ title: string }>(data.category)?.title ?? "Uncategorized",
+    cityArea: data.location,
+    // Busy/crowd level is only tracked per-review, not on the business itself.
+    crowdLevel: null,
+    rating: data.rating ?? 0,
+    reviewCount: data.reviews_count ?? 0,
+    photoUrl: data.cover_image,
+  };
 }
 
 export interface ActivityEntry {
@@ -82,13 +74,19 @@ export interface ActivityEntry {
   time: string;
 }
 
+/**
+ * The real `notifications` table exists but is currently empty, and its
+ * columns haven't been reconciled (same blocker as `review_reports` /
+ * `problem_reports`). Recent activity is approximated from actual review
+ * submissions instead, which is real, verifiable data.
+ */
 export async function getRecentActivity(limit = 5): Promise<ActivityEntry[]> {
   const supabase = await createClient();
   if (!supabase) return [];
 
   const { data, error } = await supabase
-    .from("notifications")
-    .select("title, description, actor_name, created_at")
+    .from("reviews")
+    .select("created_at, author:profiles!user_id (full_name), business:businesses!business_id (name)")
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -97,11 +95,15 @@ export async function getRecentActivity(limit = 5): Promise<ActivityEntry[]> {
     return [];
   }
 
-  return (data ?? []).map((row) => ({
-    actor: row.actor_name ?? "System",
-    action: row.description ?? row.title,
-    time: formatRelative(row.created_at),
-  }));
+  return (data ?? []).map((row) => {
+    const author = one<{ full_name: string }>(row.author);
+    const business = one<{ name: string }>(row.business);
+    return {
+      actor: author?.full_name ?? "Someone",
+      action: business ? `reviewed ${business.name}` : "posted a review",
+      time: formatRelative(row.created_at),
+    };
+  });
 }
 
 /** Review counts grouped by business category, for the category-performance card. */
@@ -111,7 +113,7 @@ export async function getCategoryPerformance() {
 
   const { data, error } = await supabase
     .from("businesses")
-    .select("category, business_stats(review_count, average_rating)");
+    .select("reviews_count, rating, category:categories(title)");
 
   if (error) {
     console.error("getCategoryPerformance:", error.message);
@@ -120,14 +122,14 @@ export async function getCategoryPerformance() {
 
   const byCategory = new Map<string, { reviews: number; ratingSum: number; rated: number }>();
   for (const row of data ?? []) {
-    const stats = one<{ review_count: number; average_rating: number | null }>(row.business_stats);
-    const entry = byCategory.get(row.category) ?? { reviews: 0, ratingSum: 0, rated: 0 };
-    entry.reviews += stats?.review_count ?? 0;
-    if (stats?.average_rating != null) {
-      entry.ratingSum += stats.average_rating;
+    const name = one<{ title: string }>(row.category)?.title ?? "Uncategorized";
+    const entry = byCategory.get(name) ?? { reviews: 0, ratingSum: 0, rated: 0 };
+    entry.reviews += row.reviews_count ?? 0;
+    if (row.rating != null && row.rating > 0) {
+      entry.ratingSum += row.rating;
       entry.rated += 1;
     }
-    byCategory.set(row.category, entry);
+    byCategory.set(name, entry);
   }
 
   const max = Math.max(1, ...[...byCategory.values()].map((e) => e.reviews));
@@ -183,10 +185,10 @@ export async function getMemberGrowth(days = 8) {
 
   if (!supabase) return buckets.map(({ label, value }) => ({ label, value }));
 
-  const { data } = await supabase.from("members").select("joined_at").gte("joined_at", since.toISOString());
+  const { data } = await supabase.from("profiles").select("created_at").gte("created_at", since.toISOString());
 
   for (const row of data ?? []) {
-    const day = new Date(row.joined_at);
+    const day = new Date(row.created_at);
     day.setHours(0, 0, 0, 0);
     const bucket = buckets.find((b) => b.date.getTime() === day.getTime());
     if (bucket) bucket.value += 1;
@@ -202,36 +204,42 @@ export interface RegionStat {
   businessCount: number;
 }
 
-/** Review volume and ratings grouped by business region. */
-export async function getRegionStats(): Promise<RegionStat[]> {
+/**
+ * The real schema has only one geographic field on `businesses` —
+ * `location` (free text, e.g. "Labone") — there's no separate
+ * region/city tier. `getRegionStats` and `getCityStats` both group by
+ * that same field rather than inventing a distinction the data doesn't
+ * have.
+ */
+async function getLocationStats(limit?: number) {
   const supabase = await createClient();
   if (!supabase) return [];
 
   const { data, error } = await supabase
     .from("businesses")
-    .select("region, business_stats(review_count, average_rating)")
-    .not("region", "is", null);
+    .select("location, reviews_count, rating")
+    .not("location", "is", null);
 
   if (error) {
-    console.error("getRegionStats:", error.message);
+    console.error("getLocationStats:", error.message);
     return [];
   }
 
-  const byRegion = new Map<string, { reviews: number; ratingSum: number; rated: number; businesses: number }>();
+  const byLocation = new Map<string, { reviews: number; ratingSum: number; rated: number; businesses: number }>();
   for (const row of data ?? []) {
-    const region = row.region as string;
-    const stats = one<{ review_count: number; average_rating: number | null }>(row.business_stats);
-    const entry = byRegion.get(region) ?? { reviews: 0, ratingSum: 0, rated: 0, businesses: 0 };
-    entry.reviews += stats?.review_count ?? 0;
+    const location = row.location as string;
+    if (!location.trim()) continue;
+    const entry = byLocation.get(location) ?? { reviews: 0, ratingSum: 0, rated: 0, businesses: 0 };
+    entry.reviews += row.reviews_count ?? 0;
     entry.businesses += 1;
-    if (stats?.average_rating != null) {
-      entry.ratingSum += stats.average_rating;
+    if (row.rating != null && row.rating > 0) {
+      entry.ratingSum += row.rating;
       entry.rated += 1;
     }
-    byRegion.set(region, entry);
+    byLocation.set(location, entry);
   }
 
-  return [...byRegion.entries()]
+  const ranked = [...byLocation.entries()]
     .map(([name, e]) => ({
       name,
       reviewCount: e.reviews,
@@ -239,6 +247,13 @@ export async function getRegionStats(): Promise<RegionStat[]> {
       businessCount: e.businesses,
     }))
     .sort((a, b) => b.reviewCount - a.reviewCount);
+
+  return limit ? ranked.slice(0, limit) : ranked;
+}
+
+/** Review volume and ratings grouped by business location. */
+export async function getRegionStats(): Promise<RegionStat[]> {
+  return getLocationStats();
 }
 
 export interface CityStat {
@@ -251,45 +266,9 @@ export interface CityStat {
 
 const CITY_COLORS = ["#ea0505", "#f59e0b", "#14b8a6", "#6366f1", "#f97316"];
 
-/** Review volume grouped by business city_area, for the "Reviews in Ghana" map card. */
+/** Review volume grouped by business location, for the "Reviews in Ghana" map card. */
 export async function getCityStats(limit = 5): Promise<(CityStat & { color: string })[]> {
-  const supabase = await createClient();
-  if (!supabase) return [];
-
-  const { data, error } = await supabase
-    .from("businesses")
-    .select("city_area, business_stats(review_count, average_rating)")
-    .not("city_area", "is", null);
-
-  if (error) {
-    console.error("getCityStats:", error.message);
-    return [];
-  }
-
-  const byCity = new Map<string, { reviews: number; ratingSum: number; rated: number; businesses: number }>();
-  for (const row of data ?? []) {
-    const city = row.city_area as string;
-    const stats = one<{ review_count: number; average_rating: number | null }>(row.business_stats);
-    const entry = byCity.get(city) ?? { reviews: 0, ratingSum: 0, rated: 0, businesses: 0 };
-    entry.reviews += stats?.review_count ?? 0;
-    entry.businesses += 1;
-    if (stats?.average_rating != null) {
-      entry.ratingSum += stats.average_rating;
-      entry.rated += 1;
-    }
-    byCity.set(city, entry);
-  }
-
-  const ranked = [...byCity.entries()]
-    .map(([name, e]) => ({
-      name,
-      reviewCount: e.reviews,
-      businessCount: e.businesses,
-      averageRating: e.rated ? Math.round((e.ratingSum / e.rated) * 10) / 10 : null,
-    }))
-    .sort((a, b) => b.reviewCount - a.reviewCount)
-    .slice(0, limit);
-
+  const ranked = await getLocationStats(limit);
   const max = Math.max(1, ...ranked.map((c) => c.reviewCount));
 
   return ranked.map((city, i) => ({
@@ -307,34 +286,34 @@ export interface TrustScore {
   fakeReviewsRemovedPercent: number;
 }
 
-/** Platform-health metrics for the dashboard's Trust Score card. */
+/**
+ * Platform-health metrics for the dashboard's Trust Score card.
+ * Report resolution and fake-review removal both need the report tables,
+ * which aren't reconciled yet (see reports.ts) — they read 0 rather than
+ * a fabricated figure until that's unblocked.
+ */
 export async function getTrustScore(): Promise<TrustScore> {
   const supabase = await createClient();
   if (!supabase) {
     return { overall: 0, verifiedReviewsPercent: 0, businessesVerifiedPercent: 0, reportResolutionRate: 0, fakeReviewsRemovedPercent: 0 };
   }
 
-  const [reviewsTotal, reviewsApproved, reviewsRejected, businessesTotal, businessesConfirmed, reportsTotal, reportsResolved] =
-    await Promise.all([
-      supabase.from("reviews").select("id", { count: "exact", head: true }),
-      supabase.from("reviews").select("id", { count: "exact", head: true }).eq("status", "approved"),
-      supabase.from("reviews").select("id", { count: "exact", head: true }).eq("status", "rejected"),
-      supabase.from("businesses").select("id", { count: "exact", head: true }).eq("is_draft", false),
-      supabase.from("businesses").select("id", { count: "exact", head: true }).eq("is_draft", false).eq("status", "confirmed"),
-      supabase.from("reports").select("id", { count: "exact", head: true }),
-      supabase.from("reports").select("id", { count: "exact", head: true }).eq("status", "resolved"),
-    ]);
+  const [reviewsTotal, reviewsVerified, businessesTotal, businessesVerified] = await Promise.all([
+    supabase.from("reviews").select("id", { count: "exact", head: true }),
+    supabase.from("reviews").select("id", { count: "exact", head: true }).eq("is_verified", true),
+    supabase.from("businesses").select("id", { count: "exact", head: true }),
+    supabase.from("businesses").select("id", { count: "exact", head: true }).eq("is_verified", true),
+  ]);
 
   const pct = (num: number, den: number) => (den > 0 ? Math.round((num / den) * 100) : 0);
 
-  const verifiedReviewsPercent = pct(reviewsApproved.count ?? 0, reviewsTotal.count ?? 0);
-  const businessesVerifiedPercent = pct(businessesConfirmed.count ?? 0, businessesTotal.count ?? 0);
-  const reportResolutionRate = pct(reportsResolved.count ?? 0, reportsTotal.count ?? 0);
-  const fakeReviewsRemovedPercent = pct(reviewsRejected.count ?? 0, reviewsTotal.count ?? 0);
+  const verifiedReviewsPercent = pct(reviewsVerified.count ?? 0, reviewsTotal.count ?? 0);
+  const businessesVerifiedPercent = pct(businessesVerified.count ?? 0, businessesTotal.count ?? 0);
+  // Not computable until review_reports / problem_reports are reconciled.
+  const reportResolutionRate = 0;
+  const fakeReviewsRemovedPercent = 0;
 
-  const overall = Math.round(
-    (verifiedReviewsPercent + businessesVerifiedPercent + reportResolutionRate + fakeReviewsRemovedPercent) / 4,
-  );
+  const overall = Math.round((verifiedReviewsPercent + businessesVerifiedPercent) / 2);
 
   return { overall, verifiedReviewsPercent, businessesVerifiedPercent, reportResolutionRate, fakeReviewsRemovedPercent };
 }

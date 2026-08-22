@@ -2,6 +2,15 @@ import { createClient } from "@/lib/supabase/server";
 import type { NotificationItem, NotificationBadgeVariant } from "@/components/notifications/types";
 import { formatRelative } from "@/lib/format";
 
+/**
+ * UNVERIFIED: the real `notifications` table exists but is currently empty,
+ * so its actual columns haven't been confirmed — the shape below is still
+ * the one drafted before we had access to the real schema. Every query
+ * here degrades to an empty result on a column mismatch rather than
+ * throwing, so this is safe to ship as-is, but it should be re-checked
+ * once the table has real rows (or its Table Editor columns are shared).
+ */
+
 const KIND_BADGE: Record<string, { label: string; variant: NotificationBadgeVariant }> = {
   review: { label: "Review", variant: "red" },
   business: { label: "Business", variant: "green" },
