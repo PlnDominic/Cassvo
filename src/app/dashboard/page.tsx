@@ -15,26 +15,27 @@ import {
   getMostViewedBusiness,
   getRecentActivity,
   getCategoryPerformance,
-  getCityStats,
   getTrustScore,
 } from "@/lib/data/dashboard";
+import { getBusinessMapMarkers } from "@/lib/data/map";
 import { formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [admin, reviews, users, businesses, trending, mostViewed, activity, categories, cities, trustScore] = await Promise.all([
-    getCurrentAdmin(),
-    getReviewCounts(),
-    getUserCounts(),
-    getBusinessCounts(),
-    getTrendingBusinesses(),
-    getMostViewedBusiness(),
-    getRecentActivity(),
-    getCategoryPerformance(),
-    getCityStats(),
-    getTrustScore(),
-  ]);
+  const [admin, reviews, users, businesses, trending, mostViewed, activity, categories, mapMarkers, trustScore] =
+    await Promise.all([
+      getCurrentAdmin(),
+      getReviewCounts(),
+      getUserCounts(),
+      getBusinessCounts(),
+      getTrendingBusinesses(),
+      getMostViewedBusiness(),
+      getRecentActivity(),
+      getCategoryPerformance(),
+      getBusinessMapMarkers(),
+      getTrustScore(),
+    ]);
 
   return (
     <DashboardShell>
@@ -67,7 +68,7 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
           <TrendingBusinessesCard businesses={trending} />
-          <ReviewsMapCard cities={cities} />
+          <ReviewsMapCard markers={mapMarkers} />
           <CategoryPerformanceCard categories={categories} />
         </div>
 

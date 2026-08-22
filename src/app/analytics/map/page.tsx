@@ -9,6 +9,7 @@ import { DownloadReportButton } from "@/components/analytics/download-report-but
 import { getReviewCounts } from "@/lib/data/reviews";
 import { getBusinessCounts } from "@/lib/data/businesses";
 import { getRegionStats } from "@/lib/data/dashboard";
+import { getBusinessMapMarkers } from "@/lib/data/map";
 import { formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -16,10 +17,11 @@ export const dynamic = "force-dynamic";
 const REGION_COLORS = ["#ea0505", "#f59e0b", "#14b8a6", "#6366f1", "#f97316", "#8b5cf6"];
 
 export default async function ReviewMapAnalysisPage() {
-  const [reviews, businesses, regions] = await Promise.all([
+  const [reviews, businesses, regions, mapMarkers] = await Promise.all([
     getReviewCounts(),
     getBusinessCounts(),
     getRegionStats(),
+    getBusinessMapMarkers(),
   ]);
 
   const overviewStats: OverviewStat[] = [
@@ -59,7 +61,7 @@ export default async function ReviewMapAnalysisPage() {
 
         <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[233px_1fr_273px]">
           <OverviewStatsCard stats={overviewStats} />
-          <GhanaMapCard />
+          <GhanaMapCard markers={mapMarkers} />
           <TopRegionsCard regions={topRegions} />
         </div>
 

@@ -209,9 +209,8 @@ export interface RegionStat {
 /**
  * The real schema has only one geographic field on `businesses` —
  * `location` (free text, e.g. "Labone") — there's no separate
- * region/city tier. `getRegionStats` and `getCityStats` both group by
- * that same field rather than inventing a distinction the data doesn't
- * have.
+ * region/city tier, so this groups by that one field rather than
+ * inventing a distinction the data doesn't have.
  */
 async function getLocationStats(limit?: number) {
   const supabase = await createClient();
@@ -256,28 +255,6 @@ async function getLocationStats(limit?: number) {
 /** Review volume and ratings grouped by business location. */
 export async function getRegionStats(): Promise<RegionStat[]> {
   return getLocationStats();
-}
-
-export interface CityStat {
-  name: string;
-  percent: number;
-  reviewCount: number;
-  businessCount: number;
-  averageRating: number | null;
-}
-
-const CITY_COLORS = ["#ea0505", "#f59e0b", "#14b8a6", "#6366f1", "#f97316"];
-
-/** Review volume grouped by business location, for the "Reviews in Ghana" map card. */
-export async function getCityStats(limit = 5): Promise<(CityStat & { color: string })[]> {
-  const ranked = await getLocationStats(limit);
-  const max = Math.max(1, ...ranked.map((c) => c.reviewCount));
-
-  return ranked.map((city, i) => ({
-    ...city,
-    percent: Math.round((city.reviewCount / max) * 100),
-    color: CITY_COLORS[i % CITY_COLORS.length],
-  }));
 }
 
 export interface TrustScore {

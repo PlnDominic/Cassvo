@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { ChevronDown, MapPin } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { PeriodDropdown } from "./period-dropdown";
-import type { CityStat } from "@/lib/data/dashboard";
+import { InteractiveGhanaMapLoader } from "../analytics/interactive-ghana-map-loader";
+import type { BusinessMapMarker } from "@/lib/data/map";
 
-export function ReviewsMapCard({ cities }: { cities: (CityStat & { color: string })[] }) {
+export function ReviewsMapCard({ markers }: { markers: BusinessMapMarker[] }) {
+  const top = markers.slice(0, 5);
+
   return (
     <div className="w-full rounded-[10px] bg-white p-5 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.08)]">
       <div className="mb-4 flex items-center justify-between">
@@ -14,23 +17,23 @@ export function ReviewsMapCard({ cities }: { cities: (CityStat & { color: string
         <PeriodDropdown />
       </div>
       <div className="flex items-center gap-6">
-        <div className="flex h-[180px] flex-1 items-center justify-center rounded-[9px] bg-[#f7f7f8]">
-          <MapPin size={40} className="text-[#bdbdc2]" strokeWidth={1.5} />
+        <div className="h-[180px] flex-1">
+          <InteractiveGhanaMapLoader markers={markers} height={180} />
         </div>
         <div className="flex shrink-0 flex-col gap-2">
-          {cities.length === 0 ? (
+          {top.length === 0 ? (
             <span className="text-xs text-[#939393]">No reviews yet</span>
           ) : (
-            cities.map((city) => (
+            top.map((area) => (
               <div
-                key={city.name}
+                key={area.name}
                 className="flex items-center justify-between gap-6 text-xs font-medium tracking-[0.01em] text-[#060606]"
               >
                 <div className="flex items-center gap-1.5">
-                  <span className="size-[11px] shrink-0 rounded-full" style={{ backgroundColor: city.color }} />
-                  <span>{city.name}</span>
+                  <span className="size-[11px] shrink-0 rounded-full bg-brand-red" />
+                  <span>{area.name}</span>
                 </div>
-                <span>{city.percent}%</span>
+                <span>{area.businessCount}</span>
               </div>
             ))
           )}
