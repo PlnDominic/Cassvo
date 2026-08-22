@@ -64,7 +64,7 @@ export function NotificationsDropdown({ notifications: initial }: { notification
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-[calc(100%+10px)] z-50 w-[340px] overflow-hidden rounded-[14px] border border-[#ececed] bg-white shadow-[0px_12px_32px_0px_rgba(0,0,0,0.12)]"
+          className="absolute right-0 top-[calc(100%+10px)] z-50 w-[calc(100vw-2rem)] max-w-[340px] overflow-hidden rounded-[14px] border border-[#ececed] bg-white shadow-[0px_12px_32px_0px_rgba(0,0,0,0.12)]"
         >
           <div className="flex items-center justify-between border-b border-[#ececed] px-4 py-3">
             <p className="text-sm font-medium text-[#060606]">Notifications</p>

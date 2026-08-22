@@ -97,7 +97,7 @@ export function AdminManagementSection({ initialAdmins }: { initialAdmins: Admin
           />
           <div>
             <p className="mb-2 text-sm font-medium text-[#060606]">Permissions</p>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+            <div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
               {ADMIN_PERMISSIONS.map((label) => (
                 <PermissionToggle
                   key={label}

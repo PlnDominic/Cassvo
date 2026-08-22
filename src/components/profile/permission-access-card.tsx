@@ -7,7 +7,7 @@ export function PermissionAccessCard({ permissions }: { permissions: string[] })
       <p className="mb-4 text-sm font-medium text-[#060606]">Permission &amp; Access</p>
       <p className="mb-2 text-xs text-[#939393]">Permissions</p>
       {permissions.length === 0 && <p className="text-sm text-[#939393]">No permissions assigned.</p>}
-      <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+      <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
         {columns.map((column, i) => (
           <div key={i} className="flex flex-col gap-2">
             {column.map((permission) => (

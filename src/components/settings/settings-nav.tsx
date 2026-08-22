@@ -17,7 +17,7 @@ export function SettingsNav({
   onChange: (section: SettingsSection) => void;
 }) {
   return (
-    <nav className="flex w-[150px] shrink-0 flex-col gap-1.5 rounded-2xl bg-white p-3 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
+    <nav className="flex w-full shrink-0 flex-col gap-1.5 rounded-2xl bg-white p-3 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)] lg:w-[150px]">
       {NAV_ITEMS.map((item) => {
         const isActive = active === item.key;
         return (
