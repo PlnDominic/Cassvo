@@ -103,7 +103,7 @@ export function ModerationDetailPanel({
         <button
           type="button"
           onClick={onApprove}
-          disabled={pending || review.status === "approved"}
+          disabled={pending}
           className="flex items-center gap-2 rounded-xl bg-brand-red px-6 py-3 text-sm font-medium text-white disabled:opacity-50"
         >
           {pending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
@@ -112,7 +112,7 @@ export function ModerationDetailPanel({
         <button
           type="button"
           onClick={onReject}
-          disabled={pending || review.status === "rejected"}
+          disabled={pending}
           className="flex items-center gap-2 rounded-xl border border-[#ececed] px-6 py-3 text-sm font-medium text-[#060606] disabled:opacity-50"
         >
           {pending ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
