@@ -61,7 +61,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
               <p className="rounded-2xl bg-white p-6 text-center text-sm text-[#939393]">No collections yet.</p>
             }
           />
-          <AdminActionsCard />
+          <AdminActionsCard userName={user.name} />
         </div>
       </div>
     </DashboardShell>

@@ -8,5 +8,6 @@ export interface NotificationItem {
   badgeLabel: string;
   badgeVariant: NotificationBadgeVariant;
   time: string;
+  href: string;
   unread: boolean;
 }

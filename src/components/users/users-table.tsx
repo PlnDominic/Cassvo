@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { MoreHorizontal } from "lucide-react";
 import { Avatar } from "../dashboard/avatar";
 import { UserStatusBadge } from "./user-status-badge";
+import { RowActionsMenu } from "../ui/row-actions-menu";
 import type { UserRow } from "./types";
 
-export function UsersTable({ users }: { users: UserRow[] }) {
+export function UsersTable({ users, onSuspend }: { users: UserRow[]; onSuspend: (id: string) => void }) {
   return (
     <div className="overflow-x-auto rounded-2xl bg-white shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
       <table className="w-full min-w-[820px] text-sm">
@@ -39,9 +39,14 @@ export function UsersTable({ users }: { users: UserRow[] }) {
                 <UserStatusBadge verified={user.verified} />
               </td>
               <td className="px-6 py-4">
-                <button type="button" aria-label="User actions" className="text-[#939393] hover:text-[#060606]">
-                  <MoreHorizontal size={18} />
-                </button>
+                <RowActionsMenu
+                  label={`Actions for ${user.name}`}
+                  actions={[
+                    { label: "View profile", href: `/users/${user.id}` },
+                    { label: "View reports", href: "/reports" },
+                    { label: "Suspend user", danger: true, onSelect: () => onSuspend(user.id) },
+                  ]}
+                />
               </td>
             </tr>
           ))}

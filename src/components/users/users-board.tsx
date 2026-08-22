@@ -5,8 +5,9 @@ import { UserTabs, type UserTab } from "./user-tabs";
 import { UsersTable } from "./users-table";
 import type { UserRow } from "./types";
 
-export function UsersBoard({ users }: { users: UserRow[] }) {
+export function UsersBoard({ users: initialUsers }: { users: UserRow[] }) {
   const [tab, setTab] = useState<UserTab>("all");
+  const [users, setUsers] = useState(initialUsers);
 
   const counts = useMemo(
     () => ({
@@ -21,10 +22,14 @@ export function UsersBoard({ users }: { users: UserRow[] }) {
 
   const filtered = tab === "all" ? users : users.filter((u) => u.category === tab);
 
+  function suspendUser(id: string) {
+    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, category: "suspended", verified: false } : u)));
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <UserTabs active={tab} onChange={setTab} counts={counts} />
-      <UsersTable users={filtered} />
+      <UsersTable users={filtered} onSuspend={suspendUser} />
     </div>
   );
 }

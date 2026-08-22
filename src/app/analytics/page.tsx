@@ -61,7 +61,12 @@ export default function AnalyticsPage() {
           <StatCard label="Page Views" value="40,689" trend={{ type: "up", text: "8.5% Up from yesterday" }} />
         </div>
 
-        <AnalyticsToolbar />
+        <AnalyticsToolbar
+          userGrowth={userGrowthPoints}
+          reviewGrowth={reviewGrowthPoints}
+          topBusinesses={topBusinesses}
+          categories={categoryPerformance}
+        />
 
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_300px]">
           <AnalyticsLineChart title="User Growth" total="34,302" changeText="+ 8.5%" points={userGrowthPoints} />

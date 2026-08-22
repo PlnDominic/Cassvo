@@ -5,12 +5,12 @@ import { FeaturedBusinessCard } from "./featured-business-card";
 import { BusinessTabs, type BusinessTab } from "./business-tabs";
 import { BusinessesToolbar } from "./businesses-toolbar";
 import { BusinessesTable } from "./businesses-table";
-import type { Business } from "./types";
+import type { Business, BusinessStatus } from "./types";
 
 const MAX_FEATURED = 2;
 
 export function BusinessesBoard({
-  businesses,
+  businesses: initialBusinesses,
   initialFeaturedIds,
 }: {
   businesses: Business[];
@@ -18,6 +18,7 @@ export function BusinessesBoard({
 }) {
   const [tab, setTab] = useState<BusinessTab>("all");
   const [featuredIds, setFeaturedIds] = useState(initialFeaturedIds);
+  const [businesses, setBusinesses] = useState(initialBusinesses);
 
   const counts = useMemo(
     () => ({
@@ -43,6 +44,10 @@ export function BusinessesBoard({
     }
   }
 
+  function setStatus(id: string, status: BusinessStatus) {
+    setBusinesses((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <FeaturedBusinessCard featured={featured} maxFeatured={MAX_FEATURED} onRemove={removeFeatured} onAdd={addFeatured} />
@@ -50,7 +55,7 @@ export function BusinessesBoard({
       <div className="flex flex-col gap-4">
         <BusinessTabs active={tab} onChange={setTab} counts={counts} />
         <BusinessesToolbar />
-        <BusinessesTable businesses={filtered} />
+        <BusinessesTable businesses={filtered} onSetStatus={setStatus} />
       </div>
     </div>
   );

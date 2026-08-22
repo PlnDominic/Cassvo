@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface Tab {
   key: string;
@@ -28,7 +29,10 @@ export function ProfileTabs({
   businessInfo: React.ReactNode;
   reports: React.ReactNode;
 }) {
-  const [active, setActive] = useState("overview");
+  const searchParams = useSearchParams();
+  const requested = searchParams.get("tab");
+  const initial = tabs.some((t) => t.key === requested) ? (requested as string) : "overview";
+  const [active, setActive] = useState(initial);
 
   const content: Record<string, React.ReactNode> = {
     overview,

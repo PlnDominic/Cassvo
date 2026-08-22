@@ -1,17 +1,9 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { downloadCsv } from "@/lib/download-csv";
 import type { OverviewStat } from "./overview-stats-card";
 import type { RegionPerformance } from "./region-performance-overview";
-
-function toCsv(stats: OverviewStat[], regions: RegionPerformance[]) {
-  const statsSection = [["Metric", "Value", "Trend"], ...stats.map((s) => [s.label, s.value, s.trend ?? ""])];
-  const regionsSection = [
-    ["Region", "Reviews", "Avg. Rating", "Trend"],
-    ...regions.map((r) => [r.name, r.reviewCount, r.rating, r.trend]),
-  ];
-  return [...statsSection, [], ...regionsSection].map((row) => row.join(",")).join("\n");
-}
 
 export function DownloadReportButton({
   stats,
@@ -21,14 +13,11 @@ export function DownloadReportButton({
   regions: RegionPerformance[];
 }) {
   function handleDownload() {
-    const csv = toCsv(stats, regions);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "review-map-analysis.csv";
-    link.click();
-    URL.revokeObjectURL(url);
+    const rows: string[][] = [
+      ...stats.map((s) => ["Metric", s.label, s.value, s.trend ?? ""]),
+      ...regions.map((r) => ["Region", r.name, `${r.reviewCount} reviews`, `${r.rating} (${r.trend})`]),
+    ];
+    downloadCsv("review-map-analysis.csv", ["Section", "Label", "Value", "Detail"], rows);
   }
 
   return (

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Avatar } from "../dashboard/avatar";
 import { Badge } from "../ui/badge";
 import type { NotificationItem } from "./types";
@@ -20,9 +21,13 @@ export function NotificationRow({ notification, onView }: { notification: Notifi
 
       <div className="shrink-0 text-right">
         <p className="text-xs text-[#939393]">{notification.time}</p>
-        <button type="button" onClick={onView} className="text-xs font-medium text-brand-red hover:underline">
+        <Link
+          href={notification.href}
+          onClick={onView}
+          className="text-xs font-medium text-brand-red hover:underline"
+        >
           View
-        </button>
+        </Link>
       </div>
     </div>
   );

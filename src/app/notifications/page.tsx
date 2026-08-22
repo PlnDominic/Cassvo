@@ -13,6 +13,7 @@ const today: NotificationItem[] = [
     badgeLabel: "Review",
     badgeVariant: "red",
     time: "2mins ago",
+    href: "/review-moderation",
     unread: true,
   },
   {
@@ -23,6 +24,7 @@ const today: NotificationItem[] = [
     badgeLabel: "Business",
     badgeVariant: "green",
     time: "2mins ago",
+    href: "/businesses",
     unread: false,
   },
   {
@@ -33,6 +35,7 @@ const today: NotificationItem[] = [
     badgeLabel: "Users",
     badgeVariant: "amber",
     time: "2mins ago",
+    href: "/users",
     unread: false,
   },
 ];

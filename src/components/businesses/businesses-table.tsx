@@ -1,8 +1,15 @@
-import { MoreHorizontal } from "lucide-react";
+import Link from "next/link";
 import { VerificationBadge, BusinessStatusBadge } from "./status-badges";
-import type { Business } from "./types";
+import { RowActionsMenu } from "../ui/row-actions-menu";
+import type { Business, BusinessStatus } from "./types";
 
-export function BusinessesTable({ businesses }: { businesses: Business[] }) {
+export function BusinessesTable({
+  businesses,
+  onSetStatus,
+}: {
+  businesses: Business[];
+  onSetStatus: (id: string, status: BusinessStatus) => void;
+}) {
   return (
     <div className="overflow-x-auto rounded-2xl bg-white shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
       <table className="w-full min-w-[720px] text-sm">
@@ -19,19 +26,32 @@ export function BusinessesTable({ businesses }: { businesses: Business[] }) {
         <tbody>
           {businesses.map((business) => (
             <tr key={business.id} className="border-b border-[#ececed] last:border-b-0">
-              <td className="px-6 py-4 font-medium text-[#060606]">{business.name}</td>
+              <td className="px-6 py-4 font-medium text-[#060606]">
+                <Link href={`/businesses/${business.id}`} className="hover:text-brand-red">
+                  {business.name}
+                </Link>
+              </td>
               <td className="px-6 py-4 text-[#606060]">{business.category}</td>
               <td className="px-6 py-4">
                 <VerificationBadge status={business.status} />
               </td>
-              <td className="px-6 py-4 text-[#606060]">{business.reviews !== null ? business.reviews.toLocaleString() : "–"}</td>
+              <td className="px-6 py-4 text-[#606060]">
+                {business.reviews !== null ? business.reviews.toLocaleString() : "–"}
+              </td>
               <td className="px-6 py-4">
                 <BusinessStatusBadge status={business.status} />
               </td>
               <td className="px-6 py-4">
-                <button type="button" aria-label="Business actions" className="text-[#939393] hover:text-[#060606]">
-                  <MoreHorizontal size={18} />
-                </button>
+                <RowActionsMenu
+                  label={`Actions for ${business.name}`}
+                  actions={[
+                    { label: "View profile", href: `/businesses/${business.id}` },
+                    { label: "View reviews", href: `/businesses/${business.id}/reviews` },
+                    ...(business.status === "confirmed"
+                      ? [{ label: "Suspend", danger: true, onSelect: () => onSetStatus(business.id, "suspended") }]
+                      : [{ label: "Approve", onSelect: () => onSetStatus(business.id, "confirmed") }]),
+                  ]}
+                />
               </td>
             </tr>
           ))}

@@ -15,15 +15,26 @@ export interface BusinessHeroData {
   socials: string[];
 }
 
-export function BusinessHero({ business, reviewsHref }: { business: BusinessHeroData; reviewsHref: string }) {
+export function BusinessHero({
+  business,
+  reviewsHref,
+  photosHref,
+}: {
+  business: BusinessHeroData;
+  reviewsHref: string;
+  photosHref: string;
+}) {
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
       <div className="relative h-[236px] flex-1 overflow-hidden rounded-2xl">
         <Image src={business.photo} alt={business.name} fill className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-        <p className="absolute bottom-5 left-5 text-sm font-medium text-white underline underline-offset-2">
+        <Link
+          href={photosHref}
+          className="absolute bottom-5 left-5 text-sm font-medium text-white underline underline-offset-2"
+        >
           See all Photos
-        </p>
+        </Link>
         <Link
           href={reviewsHref}
           className="absolute bottom-5 right-5 rounded-xl bg-white px-5 py-3 text-sm font-medium text-brand-red"

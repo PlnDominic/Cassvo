@@ -1,14 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const CODE_LENGTH = 6;
 const RESEND_SECONDS = 59;
 
 export function OtpVerifyForm() {
+  const router = useRouter();
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const isComplete = digits.every((d) => d !== "");
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!isComplete) return;
+    router.push("/reset-password");
+  }
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
@@ -46,7 +56,7 @@ export function OtpVerifyForm() {
   const seconds = String(secondsLeft % 60).padStart(2, "0");
 
   return (
-    <form className="flex w-full flex-col gap-[99px]">
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[99px]">
       <div className="flex flex-col gap-2">
         <p className="text-xl font-medium tracking-[0.01em] text-white sm:text-2xl">
           Enter 6 - digit code
@@ -87,7 +97,8 @@ export function OtpVerifyForm() {
 
       <button
         type="submit"
-        className="flex h-[60px] w-full items-center justify-center rounded-[10px] border border-white/10 bg-brand-red text-2xl font-medium tracking-[0.01em] text-white"
+        disabled={!isComplete}
+        className="flex h-[60px] w-full items-center justify-center rounded-[10px] border border-white/10 bg-brand-red text-2xl font-medium tracking-[0.01em] text-white disabled:opacity-50"
       >
         Continue
       </button>

@@ -92,7 +92,11 @@ export default async function BusinessProfilePage({ params }: { params: Promise<
           ]}
         />
 
-        <BusinessHero business={business} reviewsHref={`/businesses/${id}/reviews`} />
+        <BusinessHero
+          business={business}
+          reviewsHref={`/businesses/${id}/reviews`}
+          photosHref={`/businesses/${id}?tab=photos`}
+        />
 
         <InfoBar items={contactInfo} />
 

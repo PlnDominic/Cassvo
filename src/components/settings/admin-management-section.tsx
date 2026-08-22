@@ -20,6 +20,7 @@ export function AdminManagementSection() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState(ROLES[0]);
+  const [inviteMessage, setInviteMessage] = useState<string | null>(null);
   const [permissions, setPermissions] = useState<Record<string, boolean>>({
     Reviews: true,
     Businesses: true,
@@ -29,8 +30,30 @@ export function AdminManagementSection() {
     Settings: false,
   });
 
+  const canInvite = Boolean(fullName.trim() && email.trim() && role !== ROLES[0]);
+
   function removeAdmin(id: string) {
     setAdmins((prev) => prev.filter((a) => a.id !== id));
+  }
+
+  function sendInvite() {
+    if (!canInvite) return;
+    setAdmins((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        name: fullName.trim(),
+        email: email.trim(),
+        role,
+        active: false,
+        lastActive: "Invite pending",
+      },
+    ]);
+    setFullName("");
+    setEmail("");
+    setRole(ROLES[0]);
+    setInviteMessage(`Invite sent to ${email.trim()}`);
+    window.setTimeout(() => setInviteMessage(null), 3000);
   }
 
   function togglePermission(label: string, checked: boolean) {
@@ -94,10 +117,12 @@ export function AdminManagementSection() {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-3">
+        {inviteMessage && <span className="mr-auto text-sm font-medium text-emerald-600">{inviteMessage}</span>}
         <button
           type="button"
-          disabled={!fullName || !email || role === ROLES[0]}
+          onClick={sendInvite}
+          disabled={!canInvite}
           className="rounded-xl bg-brand-red px-6 py-3 text-sm font-medium text-white disabled:opacity-50"
         >
           Send Invite

@@ -17,17 +17,21 @@ export function RatingsDonut({
 }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  let cumulative = 0;
+
+  // Running start offset for each arc, precomputed so nothing mutates during render.
+  const arcs = segments.reduce<{ segment: RatingSegment; start: number }[]>((acc, segment) => {
+    const start = acc.length === 0 ? 0 : acc[acc.length - 1].start + acc[acc.length - 1].segment.percent;
+    return [...acc, { segment, start }];
+  }, []);
 
   return (
     <div className="flex items-center gap-6">
       <div className="relative shrink-0" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90">
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#ececed" strokeWidth={strokeWidth} />
-          {segments.map((segment) => {
+          {arcs.map(({ segment, start }) => {
             const length = circumference * (segment.percent / 100);
-            const offset = circumference * (1 - cumulative / 100);
-            cumulative += segment.percent;
+            const offset = circumference * (1 - start / 100);
             return (
               <circle
                 key={segment.label}

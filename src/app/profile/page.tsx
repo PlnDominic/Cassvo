@@ -52,7 +52,7 @@ export default function ProfilePage() {
 
         <LoginActivityTable rows={loginActivity} />
 
-        <ProfileActions />
+        <ProfileActions loginActivity={loginActivity} />
       </div>
     </DashboardShell>
   );
