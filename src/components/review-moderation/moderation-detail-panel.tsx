@@ -16,7 +16,7 @@ export function ModerationDetailPanel({
     <div className="rounded-2xl bg-white p-6 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Avatar name={review.name} size={52} />
+          <Avatar name={review.name} src={review.avatarUrl} size={52} />
           <div>
             <p className="text-base font-medium text-[#060606]">
               {review.name}, {review.location}

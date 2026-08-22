@@ -12,7 +12,7 @@ export function RecentActivity({ activity }: { activity: ActivityEntry[] }) {
           {activity.map((item, i) => (
             <div key={i} className="flex items-start gap-3">
               {i > 0 && <div className="mr-5 h-13 w-px shrink-0 bg-[#e2e2e4]" />}
-              <Avatar name={item.actor} />
+              <Avatar name={item.actor} src={item.actorAvatarUrl} />
               <div className="flex flex-col gap-1">
                 <p className="text-xs font-medium tracking-[0.01em] text-[#939393]">{item.action}</p>
                 <div className="flex items-center gap-4 text-xs font-medium tracking-[0.01em]">

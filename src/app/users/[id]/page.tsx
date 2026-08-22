@@ -31,6 +31,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
           <UserProfileCard
             user={{
               name: member.name,
+              avatarUrl: member.avatarUrl,
               memberLabel,
               location: member.location ?? "—",
               joinedDate: formatDate(member.joinedAt),

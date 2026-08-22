@@ -14,6 +14,7 @@ export default async function ReviewModerationPage() {
   const reviews: ModerationReview[] = records.map((r) => ({
     id: r.id,
     name: r.authorName,
+    avatarUrl: r.authorAvatarUrl,
     location: r.authorLocation,
     timeAgo: r.timeAgo,
     business: r.businessName,

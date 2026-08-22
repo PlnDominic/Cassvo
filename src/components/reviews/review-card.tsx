@@ -8,6 +8,7 @@ import { Avatar } from "../dashboard/avatar";
 
 export interface ReviewData {
   name: string;
+  avatarUrl: string | null;
   location: string;
   timeAgo: string;
   verified: boolean;
@@ -46,7 +47,7 @@ export function ReviewCard({ review }: { review: ReviewData }) {
   return (
     <div className="rounded-2xl bg-white p-6 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
       <div className="flex items-center gap-3">
-        <Avatar name={review.name} size={48} />
+        <Avatar name={review.name} src={review.avatarUrl} size={48} />
         <div>
           <p className="text-sm font-medium text-[#060606]">
             {review.name}, {review.location}

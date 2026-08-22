@@ -9,7 +9,7 @@ export async function getUsers(): Promise<UserRow[]> {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, phone, reviews_count, created_at")
+    .select("id, full_name, avatar_url, phone, reviews_count, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -20,6 +20,7 @@ export async function getUsers(): Promise<UserRow[]> {
   return (data ?? []).map((row) => ({
     id: row.id,
     name: row.full_name ?? "Unnamed",
+    avatarUrl: row.avatar_url,
     // Email lives in Supabase Auth, not `profiles`, and isn't reachable
     // with the anon key — only a service-role key can read auth.users.
     email: "—",

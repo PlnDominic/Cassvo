@@ -1,5 +1,6 @@
 export interface UserProfileData {
   name: string;
+  avatarUrl: string | null;
   memberLabel: string;
   location: string;
   joinedDate: string;

@@ -23,7 +23,7 @@ export function ModerationListItem({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Avatar name={review.name} size={40} />
+          <Avatar name={review.name} src={review.avatarUrl} size={40} />
           <div>
             <p className="text-sm font-medium text-[#060606]">{review.name}, {review.location}</p>
             <p className="text-xs text-[#939393]">

@@ -25,6 +25,7 @@ export default async function BusinessReviewsPage({ params }: { params: Promise<
 
   const reviews: ReviewData[] = records.map((r) => ({
     name: r.authorName,
+    avatarUrl: r.authorAvatarUrl,
     location: r.authorLocation ?? "—",
     timeAgo: r.timeAgo,
     verified: r.authorVerified,

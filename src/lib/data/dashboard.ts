@@ -70,6 +70,7 @@ export async function getMostViewedBusiness(): Promise<
 
 export interface ActivityEntry {
   actor: string;
+  actorAvatarUrl: string | null;
   action: string;
   time: string;
 }
@@ -86,7 +87,7 @@ export async function getRecentActivity(limit = 5): Promise<ActivityEntry[]> {
 
   const { data, error } = await supabase
     .from("reviews")
-    .select("created_at, author:profiles!user_id (full_name), business:businesses!business_id (name)")
+    .select("created_at, author:profiles!user_id (full_name, avatar_url), business:businesses!business_id (name)")
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -96,10 +97,11 @@ export async function getRecentActivity(limit = 5): Promise<ActivityEntry[]> {
   }
 
   return (data ?? []).map((row) => {
-    const author = one<{ full_name: string }>(row.author);
+    const author = one<{ full_name: string; avatar_url: string | null }>(row.author);
     const business = one<{ name: string }>(row.business);
     return {
       actor: author?.full_name ?? "Someone",
+      actorAvatarUrl: author?.avatar_url ?? null,
       action: business ? `reviewed ${business.name}` : "posted a review",
       time: formatRelative(row.created_at),
     };

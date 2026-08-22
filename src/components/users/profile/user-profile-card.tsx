@@ -13,7 +13,7 @@ export function UserProfileCard({ user }: { user: UserProfileData }) {
   return (
     <div className="flex flex-col gap-6 rounded-2xl bg-white p-6 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
       <div className="flex items-center gap-4">
-        <Avatar name={user.name} size={56} />
+        <Avatar name={user.name} src={user.avatarUrl} size={56} />
         <div>
           <p className="text-base font-medium text-[#060606]">{user.name}</p>
           <p className="text-xs text-[#939393]">{user.memberLabel}</p>

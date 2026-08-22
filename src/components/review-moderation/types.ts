@@ -3,6 +3,7 @@ export type ModerationStatus = "pending" | "approved" | "rejected";
 export interface ModerationReview {
   id: string;
   name: string;
+  avatarUrl: string | null;
   location: string | null;
   timeAgo: string;
   business: string;

@@ -24,7 +24,7 @@ export function UsersTable({ users, onSuspend }: { users: UserRow[]; onSuspend: 
             <tr key={user.id} className="border-b border-[#ececed] last:border-b-0">
               <td className="px-6 py-4">
                 <Link href={`/users/${user.id}`} className="flex items-center gap-3 hover:opacity-80">
-                  <Avatar name={user.name} size={40} />
+                  <Avatar name={user.name} src={user.avatarUrl} size={40} />
                   <div>
                     <p className="font-medium text-[#060606]">{user.name}</p>
                     <p className="text-xs text-[#939393]">{user.email}</p>
