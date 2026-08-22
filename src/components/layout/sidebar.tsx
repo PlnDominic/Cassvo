@@ -105,12 +105,12 @@ export function Sidebar() {
         </div>
       </nav>
 
-      <div className="mt-8 flex items-center gap-2">
+      <Link href="/profile" className="mt-8 flex items-center gap-2 hover:opacity-80">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-red text-sm font-medium text-white">
           A
         </div>
         <span className="text-[16px] font-medium tracking-[0.01em] text-white">Angela A.</span>
-      </div>
+      </Link>
     </aside>
   );
 }
