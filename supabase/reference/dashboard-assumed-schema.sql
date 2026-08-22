@@ -1,3 +1,22 @@
+-- =====================================================================
+--  DO NOT RUN THIS FILE AGAINST THE CASSVO PROJECT.
+--
+--  This was written when we believed the Supabase project was new and
+--  empty. It is NOT the real schema. The live project already has its
+--  own schema serving the iOS/Android app, and that schema is the
+--  single source of truth.
+--
+--  Applying this would attempt to create 12 tables, 9 enum types and
+--  2 views, and would run `alter table ... enable row level security`.
+--  Enabling RLS on an existing table without matching policies makes it
+--  return zero rows to the mobile app — a silent production outage.
+--
+--  It is kept only as a record of what the dashboard's data layer was
+--  originally written against, so it can be diffed against the real
+--  schema. It lives outside supabase/migrations/ on purpose, so that
+--  `supabase db push` cannot pick it up.
+-- =====================================================================
+
 -- Cassvo admin platform — initial schema
 -- Domain model derived from the admin dashboard UI.
 
