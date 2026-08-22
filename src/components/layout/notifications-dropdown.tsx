@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Bell, MessageSquareWarning, Store, UserPlus, Star } from "lucide-react";
 
 interface Notification {
@@ -141,6 +142,14 @@ export function NotificationsDropdown() {
               })
             )}
           </div>
+
+          <Link
+            href="/notifications"
+            onClick={() => setOpen(false)}
+            className="block border-t border-[#ececed] px-4 py-3 text-center text-xs font-medium text-brand-red hover:underline"
+          >
+            View all
+          </Link>
         </div>
       )}
     </div>
