@@ -4,8 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { TextField } from "@/components/ui/text-field";
-import { GoogleIcon } from "@/components/icons/google-icon";
-import { RuleLine } from "@/components/icons/rule-line";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { recordLoginSession } from "@/lib/auth/record-login";
 
@@ -81,24 +79,6 @@ export function LoginForm() {
       />
 
       {error && <p className="text-base font-medium text-brand-red">{error}</p>}
-
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex w-full items-center gap-4">
-          <RuleLine className="h-px w-full flex-1" />
-          <p className="shrink-0 text-base font-medium tracking-[0.01em] text-line">or continue with</p>
-          <RuleLine className="h-px w-full flex-1" />
-        </div>
-
-        <button
-          type="button"
-          aria-label="Google sign-in isn't set up yet"
-          title="Google sign-in isn't set up yet"
-          disabled
-          className="flex size-[60px] cursor-not-allowed items-center justify-center rounded-full border-[0.5px] border-line bg-white opacity-40 shadow-[0px_4px_10px_rgba(0,0,0,0.1)]"
-        >
-          <GoogleIcon className="size-5" />
-        </button>
-      </div>
 
       <button
         type="submit"
