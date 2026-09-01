@@ -1,19 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { TextField } from "@/components/ui/text-field";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { recordLoginSession } from "@/lib/auth/record-login";
 
+const NOT_ADMIN_MESSAGE = "This account doesn't have admin access. Ask an existing admin to invite you from Settings.";
+
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    searchParams.get("error") === "not-admin" ? NOT_ADMIN_MESSAGE : null,
+  );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,11 +33,28 @@ export function LoginForm() {
     if (!supabase) return;
 
     setSubmitting(true);
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    setSubmitting(false);
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (signInError) {
+      setSubmitting(false);
       setError(signInError.message === "Invalid login credentials" ? "Incorrect email or password." : signInError.message);
+      return;
+    }
+
+    // A valid Cassvo Auth account isn't enough — the admin dashboard is a
+    // separate, invite-only surface. Only a matching active admin_users
+    // row grants access; anyone else is signed back out immediately.
+    const { data: admin } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("auth_user_id", signInData.user.id)
+      .eq("active", true)
+      .maybeSingle();
+
+    if (!admin) {
+      await supabase.auth.signOut();
+      setSubmitting(false);
+      setError(NOT_ADMIN_MESSAGE);
       return;
     }
 
