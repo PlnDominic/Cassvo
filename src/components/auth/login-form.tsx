@@ -1,20 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { TextField } from "@/components/ui/text-field";
 import { GoogleIcon } from "@/components/icons/google-icon";
 import { RuleLine } from "@/components/icons/rule-line";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { recordLoginSession } from "@/lib/auth/record-login";
 
+const NOT_ADMIN_MESSAGE = "This account doesn't have admin access. Ask an existing admin to invite you from Settings.";
+
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    searchParams.get("error") === "not-admin" ? NOT_ADMIN_MESSAGE : null,
+  );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,11 +33,28 @@ export function LoginForm() {
     if (!supabase) return;
 
     setSubmitting(true);
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    setSubmitting(false);
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (signInError) {
+      setSubmitting(false);
       setError(signInError.message === "Invalid login credentials" ? "Incorrect email or password." : signInError.message);
+      return;
+    }
+
+    // A valid Cassvo Auth account isn't enough — the admin dashboard is a
+    // separate, invite-only surface. Only a matching active admin_users
+    // row grants access; anyone else is signed back out immediately.
+    const { data: admin } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("auth_user_id", signInData.user.id)
+      .eq("active", true)
+      .maybeSingle();
+
+    if (!admin) {
+      await supabase.auth.signOut();
+      setSubmitting(false);
+      setError(NOT_ADMIN_MESSAGE);
       return;
     }
 
@@ -57,22 +78,17 @@ export function LoginForm() {
         required
       />
 
-      <div className="flex flex-col gap-2">
-        <TextField
-          id="password"
-          name="password"
-          type="password"
-          label="Password"
-          placeholder="Enter your Password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <Link href="/forgot-password" className="text-base font-medium tracking-[0.01em] text-brand-red">
-          Forgot Password
-        </Link>
-      </div>
+      <TextField
+        id="password"
+        name="password"
+        type="password"
+        label="Password"
+        placeholder="Enter your Password"
+        autoComplete="current-password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
 
       {error && <p className="text-base font-medium text-brand-red">{error}</p>}
 
@@ -101,13 +117,6 @@ export function LoginForm() {
       >
         {submitting ? "Signing in…" : "Login"}
       </button>
-
-      <p className="text-center text-base font-medium tracking-[0.01em] text-white/70">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="text-brand-red">
-          Sign up
-        </Link>
-      </p>
     </form>
   );
 }
