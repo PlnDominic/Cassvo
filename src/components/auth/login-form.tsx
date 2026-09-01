@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { TextField } from "@/components/ui/text-field";
 import { GoogleIcon } from "@/components/icons/google-icon";
 import { RuleLine } from "@/components/icons/rule-line";
@@ -57,22 +56,17 @@ export function LoginForm() {
         required
       />
 
-      <div className="flex flex-col gap-2">
-        <TextField
-          id="password"
-          name="password"
-          type="password"
-          label="Password"
-          placeholder="Enter your Password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <Link href="/forgot-password" className="text-base font-medium tracking-[0.01em] text-brand-red">
-          Forgot Password
-        </Link>
-      </div>
+      <TextField
+        id="password"
+        name="password"
+        type="password"
+        label="Password"
+        placeholder="Enter your Password"
+        autoComplete="current-password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
 
       {error && <p className="text-base font-medium text-brand-red">{error}</p>}
 
@@ -101,13 +95,6 @@ export function LoginForm() {
       >
         {submitting ? "Signing in…" : "Login"}
       </button>
-
-      <p className="text-center text-base font-medium tracking-[0.01em] text-white/70">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="text-brand-red">
-          Sign up
-        </Link>
-      </p>
     </form>
   );
 }
