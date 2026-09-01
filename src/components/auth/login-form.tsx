@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { TextField } from "@/components/ui/text-field";
 import { GoogleIcon } from "@/components/icons/google-icon";
 import { RuleLine } from "@/components/icons/rule-line";
@@ -12,6 +13,7 @@ export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,13 +61,23 @@ export function LoginForm() {
       <TextField
         id="password"
         name="password"
-        type="password"
+        type={showPassword ? "text" : "password"}
         label="Password"
         placeholder="Enter your Password"
         autoComplete="current-password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
+        endAdornment={
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="text-white/60 hover:text-white"
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        }
       />
 
       {error && <p className="text-base font-medium text-brand-red">{error}</p>}
