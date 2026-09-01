@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { LoginForm } from "@/components/auth/login-form";
 
@@ -11,9 +10,7 @@ export default function LoginPage() {
           <p className="text-lg sm:text-2xl">Sign into your Cassvo Admin Account</p>
         </div>
 
-        <Suspense>
-          <LoginForm />
-        </Suspense>
+        <LoginForm />
       </div>
     </AuthLayout>
   );
