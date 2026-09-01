@@ -61,7 +61,7 @@ export function AdminManagementSection({ initialAdmins }: { initialAdmins: Admin
             name: fullName.trim(),
             email: email.trim().toLowerCase(),
             role: roleLabel,
-            active: false,
+            active: true,
             lastActive: "Invite pending",
           },
         ]);

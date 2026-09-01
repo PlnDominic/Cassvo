@@ -190,10 +190,11 @@ export const ESCALATION_THRESHOLDS = [3, 5, 10];
 export const FAILED_LOGIN_LIMITS = [3, 5, 10];
 export const LOCKOUT_DURATIONS = [10, 20, 60];
 
+// admin_users.role has a check constraint of ('admin', 'moderator') — see
+// supabase/proposed/001_admin_users.sql. These are the only two real roles.
 export const ADMIN_ROLES = [
-  { value: "super_admin", label: "Super Admin" },
+  { value: "admin", label: "Admin" },
   { value: "moderator", label: "Moderator" },
-  { value: "analyst", label: "Analyst" },
 ];
 
 export const ADMIN_PERMISSIONS = ["Reviews", "Businesses", "Users", "Reports", "Analytics", "Settings"];
