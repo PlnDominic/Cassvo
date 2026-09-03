@@ -8,10 +8,17 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 /**
  * Landing page for the link in Supabase's invite email. The link carries
- * short-lived auth tokens (in the URL, not visible to the server) that
- * @supabase/ssr's browser client picks up automatically on load — this
- * page just waits for that to resolve into a real session before letting
- * the invitee set the password they'll actually log in with afterward.
+ * short-lived auth tokens in the URL — as a `#access_token=...` hash
+ * fragment (the implicit flow, which is what Supabase's invite email
+ * actually sends), never sent to the server.
+ *
+ * @supabase/ssr's browser client defaults to `flowType: "pkce"`, whose
+ * automatic URL-detection only looks for a `?code=` query param — it
+ * silently ignores a hash-fragment token, so relying on it here left
+ * every invite looking "invalid or expired" even with a valid token
+ * sitting right in the URL. This parses the hash directly and calls
+ * setSession() with it instead, which works regardless of flow type.
+ *
  * middleware.ts treats "/accept-invite" as public specifically so this
  * first, cookie-less request isn't bounced away before that can happen.
  */
@@ -30,25 +37,30 @@ export function AcceptInviteForm() {
     const supabase = createClient();
     if (!supabase) return;
 
-    let settled = false;
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session && !settled) {
-        settled = true;
-        setStatus("ready");
-      }
-    });
+    async function resolveSession() {
+      const hashParams = new URLSearchParams(window.location.hash.slice(1));
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
 
-    // getSession() resolves once the client's automatic URL-token
-    // handling has finished — null means there was never a valid invite
-    // token to begin with (a broken link, or one already used/expired).
-    supabase.auth.getSession().then(({ data }) => {
-      if (!settled) {
-        settled = true;
-        setStatus(data.session ? "ready" : "invalid");
+      if (accessToken && refreshToken) {
+        const { data, error } = await supabase!.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        // Strip the tokens from the visible URL either way — they're
+        // single-use and shouldn't linger in the address bar or history.
+        window.history.replaceState(null, "", window.location.pathname);
+        setStatus(!error && data.session ? "ready" : "invalid");
+        return;
       }
-    });
 
-    return () => subscription.subscription.unsubscribe();
+      // No hash tokens present — either an already-established session
+      // (e.g. a page refresh after the above already ran) or a broken link.
+      const { data } = await supabase!.auth.getSession();
+      setStatus(data.session ? "ready" : "invalid");
+    }
+
+    resolveSession();
   }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
