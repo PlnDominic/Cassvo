@@ -7,7 +7,12 @@ import { TextField } from "@/components/ui/text-field";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { recordLoginSession } from "@/lib/auth/record-login";
 
-const NOT_ADMIN_MESSAGE = "This account doesn't have admin access. Ask an existing admin to invite you from Settings.";
+// Deliberately the same wording for "wrong password" and "correct
+// password but not an admin" — see handleSubmit below. A distinct
+// message for the second case would let anyone with a list of Cassvo
+// customer-app emails use this form to test which ones have valid
+// passwords, without ever needing admin access.
+const LOGIN_FAILED_MESSAGE = "Incorrect email or password, or this account doesn't have admin access.";
 
 export function LoginForm() {
   const router = useRouter();
@@ -17,7 +22,7 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(
-    searchParams.get("error") === "not-admin" ? NOT_ADMIN_MESSAGE : null,
+    searchParams.get("error") === "not-admin" ? LOGIN_FAILED_MESSAGE : null,
   );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -37,7 +42,11 @@ export function LoginForm() {
 
     if (signInError) {
       setSubmitting(false);
-      setError(signInError.message === "Invalid login credentials" ? "Incorrect email or password." : signInError.message);
+      // Supabase's own message ("Invalid login credentials") already
+      // doesn't reveal which of email/password was wrong — kept as-is
+      // for a real config/network error, but the credential case uses
+      // the same shared wording as the not-an-admin case below.
+      setError(signInError.message === "Invalid login credentials" ? LOGIN_FAILED_MESSAGE : signInError.message);
       return;
     }
 
@@ -54,7 +63,7 @@ export function LoginForm() {
     if (!admin) {
       await supabase.auth.signOut();
       setSubmitting(false);
-      setError(NOT_ADMIN_MESSAGE);
+      setError(LOGIN_FAILED_MESSAGE);
       return;
     }
 
