@@ -8,6 +8,7 @@ import {
   MessageSquareCheck,
   Store,
   Users,
+  Bell,
   BarChart2,
   TrendingUp,
   Settings,
@@ -21,6 +22,7 @@ const mainNav = [
   { label: "Review Moderation", href: "/review-moderation", icon: MessageSquareCheck },
   { label: "Businesses", href: "/businesses", icon: Store },
   { label: "Users", href: "/users", icon: Users },
+  { label: "Notifications", href: "/notifications", icon: Bell },
 ];
 
 const insightNav = [
