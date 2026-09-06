@@ -3,6 +3,8 @@ import type { NotificationItem, NotificationBadgeVariant } from "@/components/no
 import { formatRelative } from "@/lib/format";
 import { one } from "./util";
 import { resolveNames } from "./reports";
+import { getPlatformSettings } from "./settings";
+import type { NotificationSettings } from "@/lib/settings-schema";
 
 /**
  * The real `notifications` table exists but has never had a single row
@@ -13,8 +15,18 @@ import { resolveNames } from "./reports";
  * and new businesses. There's no source for a real "system alert" or
  * "security alert" event, so those categories stay honestly empty instead
  * of being invented.
+ *
+ * Settings → Notifications' "Notify Me About" toggles
+ * (platform_settings.notification.events, see settings-schema.ts) gate
+ * which of these actually show up here: each synthesized event carries
+ * the settings key it corresponds to, and one is dropped entirely if
+ * that toggle is off. This is in-app only — the delivery-channel toggles
+ * (Email/SMS/Push) and the Frequency setting have no effect here, since
+ * this page is read live on every load rather than pushed to anyone;
+ * there's no provider wired up to actually email/text/push these.
  */
 
+type EventKey = keyof NotificationSettings["events"];
 type Kind = "review" | "flag" | "business";
 
 const KIND_META: Record<Kind, { icon: "review" | "business" | "user" | "system"; badgeLabel: string; badgeVariant: NotificationBadgeVariant }> = {
@@ -26,6 +38,8 @@ const KIND_META: Record<Kind, { icon: "review" | "business" | "user" | "system";
 interface Event {
   id: string;
   kind: Kind;
+  /** Which "Notify Me About" toggle this event is gated by. */
+  settingKey: EventKey;
   avatarName: string;
   title: string;
   description: string;
@@ -55,7 +69,8 @@ async function getRecentEvents(limit: number): Promise<Event[]> {
   const supabase = await createClient();
   if (!supabase) return [];
 
-  const [reviews, reviewReports, problemReports, businesses] = await Promise.all([
+  const [settings, reviews, reviewReports, problemReports, businesses] = await Promise.all([
+    getPlatformSettings(),
     supabase
       .from("reviews")
       .select("id, content, business_id, created_at, author:profiles!user_id (full_name), business:businesses!business_id (name)")
@@ -74,6 +89,8 @@ async function getRecentEvents(limit: number): Promise<Event[]> {
     supabase.from("businesses").select("id, name, created_at").order("created_at", { ascending: false }).limit(limit),
   ]);
 
+  const wants = settings.notification.events;
+
   const names = await resolveNames(supabase, [
     ...(reviewReports.data ?? []).map((r) => r.reporter_id),
     ...(problemReports.data ?? []).map((r) => r.user_id),
@@ -81,55 +98,71 @@ async function getRecentEvents(limit: number): Promise<Event[]> {
 
   const events: Event[] = [];
 
-  for (const row of reviews.data ?? []) {
-    const author = one<{ full_name: string }>(row.author);
-    const business = one<{ name: string }>(row.business);
-    events.push({
-      id: `review-${row.id}`,
-      kind: "review",
-      avatarName: author?.full_name ?? "Someone",
-      title: "New Review Submitted",
-      description: business ? `${author?.full_name ?? "Someone"} reviewed ${business.name}` : "New review submitted",
-      href: "/review-moderation",
-      createdAt: row.created_at,
-    });
+  if (wants.newReviewSubmitted) {
+    for (const row of reviews.data ?? []) {
+      const author = one<{ full_name: string }>(row.author);
+      const business = one<{ name: string }>(row.business);
+      events.push({
+        id: `review-${row.id}`,
+        kind: "review",
+        settingKey: "newReviewSubmitted",
+        avatarName: author?.full_name ?? "Someone",
+        title: "New Review Submitted",
+        description: business ? `${author?.full_name ?? "Someone"} reviewed ${business.name}` : "New review submitted",
+        href: "/review-moderation",
+        createdAt: row.created_at,
+      });
+    }
   }
 
-  for (const row of reviewReports.data ?? []) {
-    events.push({
-      id: `review-report-${row.id}`,
-      kind: "flag",
-      avatarName: names.get(row.reporter_id) ?? "Someone",
-      title: "Review Flagged",
-      description: row.reason,
-      href: `/reports/review-${row.id}`,
-      createdAt: row.created_at,
-    });
+  if (wants.reviewFlagged) {
+    for (const row of reviewReports.data ?? []) {
+      events.push({
+        id: `review-report-${row.id}`,
+        kind: "flag",
+        settingKey: "reviewFlagged",
+        avatarName: names.get(row.reporter_id) ?? "Someone",
+        title: "Review Flagged",
+        description: row.reason,
+        href: `/reports/review-${row.id}`,
+        createdAt: row.created_at,
+      });
+    }
   }
 
-  for (const row of problemReports.data ?? []) {
-    events.push({
-      id: `problem-report-${row.id}`,
-      kind: "flag",
-      avatarName: names.get(row.user_id) ?? row.contact_email ?? "Someone",
-      title: "Problem Reported",
-      description: row.message,
-      href: `/reports/problem-${row.id}`,
-      createdAt: row.created_at,
-    });
+  if (wants.userReportSubmitted) {
+    for (const row of problemReports.data ?? []) {
+      events.push({
+        id: `problem-report-${row.id}`,
+        kind: "flag",
+        settingKey: "userReportSubmitted",
+        avatarName: names.get(row.user_id) ?? row.contact_email ?? "Someone",
+        title: "Problem Reported",
+        description: row.message,
+        href: `/reports/problem-${row.id}`,
+        createdAt: row.created_at,
+      });
+    }
   }
 
-  for (const row of businesses.data ?? []) {
-    events.push({
-      id: `business-${row.id}`,
-      kind: "business",
-      avatarName: row.name,
-      title: "New Business Registration",
-      description: `${row.name} was added to the platform`,
-      href: `/businesses/${row.id}`,
-      createdAt: row.created_at,
-    });
+  if (wants.newBusinessRegistration) {
+    for (const row of businesses.data ?? []) {
+      events.push({
+        id: `business-${row.id}`,
+        kind: "business",
+        settingKey: "newBusinessRegistration",
+        avatarName: row.name,
+        title: "New Business Registration",
+        description: `${row.name} was added to the platform`,
+        href: `/businesses/${row.id}`,
+        createdAt: row.created_at,
+      });
+    }
   }
+
+  // securityAlert and systemUpdate have no real event source to gate —
+  // see the file-level comment — so those two toggles have nothing to do
+  // yet regardless of on/off.
 
   return events.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, limit);
 }
