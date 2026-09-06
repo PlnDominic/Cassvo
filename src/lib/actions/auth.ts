@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { RATE_LIMIT_WINDOW_MINUTES, MAX_FAILED_ATTEMPTS } from "@/lib/auth/rate-limit";
 import type { ActionResult } from "./settings";
 
 const NOT_CONFIGURED: ActionResult = {
@@ -16,8 +17,6 @@ const NOT_CONFIGURED: ActionResult = {
 // admin access (this is the same fix as security finding #2).
 const LOGIN_FAILED_MESSAGE = "Incorrect email or password, or this account doesn't have admin access.";
 
-const RATE_LIMIT_WINDOW_MINUTES = 15;
-const MAX_FAILED_ATTEMPTS = 5;
 const RATE_LIMITED_MESSAGE = "Too many failed attempts. Try again in a few minutes.";
 
 /**
