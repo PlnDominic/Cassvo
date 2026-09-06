@@ -6,9 +6,10 @@ import { Eye, EyeOff } from "lucide-react";
 import { TextField } from "@/components/ui/text-field";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { recordLoginSession } from "@/lib/auth/record-login";
+import { loginWithPassword } from "@/lib/actions/auth";
 
 // Deliberately the same wording for "wrong password" and "correct
-// password but not an admin" — see handleSubmit below. A distinct
+// password but not an admin" — see loginWithPassword. A distinct
 // message for the second case would let anyone with a list of Cassvo
 // customer-app emails use this form to test which ones have valid
 // passwords, without ever needing admin access.
@@ -34,40 +35,23 @@ export function LoginForm() {
       return;
     }
 
-    const supabase = createClient();
-    if (!supabase) return;
-
     setSubmitting(true);
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    // Signing in runs server-side (not supabase-js directly from here
+    // anymore) so it can be rate-limited — see loginWithPassword's own
+    // comment for why that has to happen server-side to mean anything.
+    const outcome = await loginWithPassword(email, password);
 
-    if (signInError) {
+    if (!outcome.ok) {
       setSubmitting(false);
-      // Supabase's own message ("Invalid login credentials") already
-      // doesn't reveal which of email/password was wrong — kept as-is
-      // for a real config/network error, but the credential case uses
-      // the same shared wording as the not-an-admin case below.
-      setError(signInError.message === "Invalid login credentials" ? LOGIN_FAILED_MESSAGE : signInError.message);
+      setError(outcome.message);
       return;
     }
 
-    // A valid Cassvo Auth account isn't enough — the admin dashboard is a
-    // separate, invite-only surface. Only a matching active admin_users
-    // row grants access; anyone else is signed back out immediately.
-    const { data: admin } = await supabase
-      .from("admin_users")
-      .select("id")
-      .eq("auth_user_id", signInData.user.id)
-      .eq("active", true)
-      .maybeSingle();
-
-    if (!admin) {
-      await supabase.auth.signOut();
-      setSubmitting(false);
-      setError(LOGIN_FAILED_MESSAGE);
-      return;
-    }
-
-    await recordLoginSession(supabase);
+    // The server action already established the session (cookies are
+    // set on its response); this just picks it up client-side to record
+    // the login (needs navigator.userAgent, browser-only) before moving on.
+    const supabase = createClient();
+    if (supabase) await recordLoginSession(supabase);
 
     router.push("/dashboard");
     router.refresh();
