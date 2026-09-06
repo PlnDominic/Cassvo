@@ -9,9 +9,15 @@
 --  What it does:
 --    - Creates ONE new table, `admin_users`, linking a Supabase Auth
 --      user to a dashboard identity (name, role, active flag).
---    - Creates ONE new function, `is_admin()`, used by this table's
---      own RLS policies.
---    - Enables RLS on `admin_users` and adds policies scoped to it.
+--    - Creates TWO new functions, `is_admin()` and `is_super_admin()`,
+--      used by this table's own RLS policies (the latter also used by
+--      login_activity's, in 002_login_activity.sql).
+--    - Enables RLS on `admin_users` and adds policies scoped to it. The
+--      UPDATE/DELETE policies are admin-only (is_super_admin()), not
+--      just any active admin_users row (is_admin()) — otherwise a
+--      moderator could edit or delete admin_users rows, including their
+--      own role, by calling Supabase directly instead of through this
+--      app's admin-only server actions.
 --
 --  What it does NOT do:
 --    - Touch any existing table, column, policy, or type. `businesses`,
@@ -65,25 +71,73 @@ $$;
 comment on function is_admin() is
   'True when the currently authenticated user has an active admin_users row. Used by RLS policies — safe to reuse on other tables later without redefining it.';
 
+-- ---------------------------------------------------------------- is_super_admin()
+
+-- Stricter than is_admin(): true only for an active row whose role is
+-- specifically 'admin', not 'moderator'. admin_users' own UPDATE/DELETE
+-- policies (below) and login_activity's DELETE policy (002) need this,
+-- not is_admin() — the app layer (src/lib/actions/settings.ts) already
+-- checks caller.role === 'admin' before calling any of those mutations,
+-- but that check is bypassable by anyone who calls the Supabase REST/JS
+-- API directly with a moderator's own session instead of going through
+-- this app. RLS is the real trust boundary here, so it has to enforce
+-- the same role restriction itself — a policy that only calls is_admin()
+-- would let a moderator promote themselves to 'admin' (or deactivate/
+-- delete any admin, including the actual admins) by writing to
+-- admin_users directly, with the app-level check never in the loop.
+create or replace function is_super_admin()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from admin_users
+    where auth_user_id = auth.uid()
+      and active
+      and role = 'admin'
+  );
+$$;
+
+comment on function is_super_admin() is
+  'True when the currently authenticated user has an active admin_users row with role = ''admin'' (not ''moderator''). Used to gate RLS policies that must stay admin-only even against direct API/client calls, not just the app''s own server actions.';
+
 -- ---------------------------------------------------------------- RLS
 
 alter table admin_users enable row level security;
 
--- Any active admin can see the full admin roster (needed for the
--- Settings -> Admin Management table).
+-- Any active admin (admin or moderator) can see the full admin roster
+-- (needed for the Settings -> Admin Management table, and for the
+-- "Assign Moderator" picker, which any admin dashboard user can open).
 create policy "Admins can view admin_users"
   on admin_users for select
   using (is_admin());
 
--- Any active admin can edit another admin's role/active flag.
+-- Only an admin (not a moderator) can edit another admin's role/active
+-- flag — enforced here via is_super_admin(), not just in application
+-- code, so a moderator can't bypass the app and self-promote by calling
+-- Supabase directly with their own session. with_check mirrors using()
+-- so a caller also can't turn a row into something that would pass a
+-- laxer check after the fact.
+-- Dropped and recreated rather than left as a bare `create policy` —
+-- this same policy name may already exist on a project that ran an
+-- earlier version of this script with the old, is_admin()-only
+-- definition; this makes the fix re-runnable instead of erroring on
+-- "policy already exists".
+drop policy if exists "Admins can update admin_users" on admin_users;
 create policy "Admins can update admin_users"
   on admin_users for update
-  using (is_admin());
+  using (is_super_admin())
+  with check (is_super_admin());
 
--- Any active admin can remove another admin.
+-- Only an admin (not a moderator) can remove another admin — same
+-- reasoning as the update policy above.
+drop policy if exists "Admins can remove admin_users" on admin_users;
 create policy "Admins can remove admin_users"
   on admin_users for delete
-  using (is_admin());
+  using (is_super_admin());
 
 -- Deliberately no INSERT policy: creating a new admin is a privileged
 -- action that should not be self-service via RLS (a user granting
