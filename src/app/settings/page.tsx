@@ -18,6 +18,7 @@ export default async function SettingsPage() {
       <SettingsBoard
         admins={admins}
         adminName={admin?.name ?? ""}
+        viewerIsAdmin={admin?.role === "Admin"}
         sessions={sessions}
         settings={settings}
       />

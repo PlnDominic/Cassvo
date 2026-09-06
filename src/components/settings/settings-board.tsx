@@ -23,11 +23,14 @@ const SUBTITLES: Record<SettingsSection, string> = {
 export function SettingsBoard({
   admins,
   adminName,
+  viewerIsAdmin,
   sessions,
   settings,
 }: {
   admins: AdminUser[];
   adminName: string;
+  /** Moderators can only handle reviews — every write action outside Review Moderation is admin-only. */
+  viewerIsAdmin: boolean;
   sessions: ActiveSession[];
   settings: PlatformSettings;
 }) {
@@ -49,7 +52,7 @@ export function SettingsBoard({
           {section === "general" && <GeneralSection initial={settings.general} />}
           {section === "moderation" && <ModerationSection initial={settings.moderation} />}
           {section === "notification" && <NotificationsSection initial={settings.notification} />}
-          {section === "admin" && <AdminManagementSection initialAdmins={admins} />}
+          {section === "admin" && <AdminManagementSection initialAdmins={admins} viewerIsAdmin={viewerIsAdmin} />}
           {section === "security" && <SecuritySection initial={settings.security} sessions={sessions} />}
         </div>
       </div>

@@ -3,12 +3,28 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingColumnError } from "@/lib/data/reviews";
+import { getCallerAdmin } from "@/lib/auth/require-admin";
 import type { ActionResult } from "./settings";
 
 const NOT_CONFIGURED: ActionResult = {
   ok: false,
   message: "Supabase is not configured yet — changes cannot be saved.",
 };
+
+const NOT_ADMIN: ActionResult = { ok: false, message: "You don't have admin access." };
+
+/**
+ * reviews' own "Admins can moderate reviews" RLS policy (is_admin(),
+ * supabase/proposed/004_review_moderation.sql) already enforces this —
+ * this app-level check is a backstop, not the primary gate. Unlike the
+ * admin-only actions in settings.ts, moderators ARE meant to reach these:
+ * this only confirms the caller is *some* active admin_users row, not a
+ * specific role.
+ */
+async function requireAnyAdmin(supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>) {
+  const caller = await getCallerAdmin(supabase);
+  return caller ? null : NOT_ADMIN;
+}
 
 const REJECT_NOT_READY: ActionResult = {
   ok: false,
@@ -34,6 +50,8 @@ function revalidateModeration() {
 export async function approveReview(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONFIGURED;
+  const denied = await requireAnyAdmin(supabase);
+  if (denied) return denied;
 
   let { error, count } = await supabase
     .from("reviews")
@@ -68,6 +86,8 @@ export async function approveReview(id: string): Promise<ActionResult> {
 export async function rejectReview(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONFIGURED;
+  const denied = await requireAnyAdmin(supabase);
+  if (denied) return denied;
 
   const { error, count } = await supabase
     .from("reviews")
@@ -91,6 +111,8 @@ export async function rejectReview(id: string): Promise<ActionResult> {
 export async function approveAllPending(): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONFIGURED;
+  const denied = await requireAnyAdmin(supabase);
+  if (denied) return denied;
 
   let { error, count } = await supabase
     .from("reviews")

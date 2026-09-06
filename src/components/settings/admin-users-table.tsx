@@ -18,10 +18,13 @@ export function AdminUsersTable({
   admins,
   onRemove,
   onToggleActive,
+  readOnly = false,
 }: {
   admins: AdminUser[];
   onRemove: (id: string) => void;
   onToggleActive: (id: string, active: boolean) => void;
+  /** Moderators can view the roster but can't remove/activate/deactivate anyone — enforced server-side too. */
+  readOnly?: boolean;
 }) {
   if (admins.length === 0) {
     return (
@@ -40,7 +43,7 @@ export function AdminUsersTable({
             <th className="px-4 py-3 font-medium">Role</th>
             <th className="px-4 py-3 font-medium">Status</th>
             <th className="px-4 py-3 font-medium">Last Active</th>
-            <th className="px-4 py-3 font-medium">Actions</th>
+            {!readOnly && <th className="px-4 py-3 font-medium">Actions</th>}
           </tr>
         </thead>
         <tbody>
@@ -60,24 +63,26 @@ export function AdminUsersTable({
                 <Badge variant={admin.active ? "green" : "red"}>{admin.active ? "Active" : "Inactive"}</Badge>
               </td>
               <td className="px-4 py-3 text-[#939393]">{admin.lastActive}</td>
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <ToggleSwitch
-                    size="sm"
-                    checked={admin.active}
-                    onChange={(checked) => onToggleActive(admin.id, checked)}
-                    label={`${admin.active ? "Deactivate" : "Activate"} ${admin.name}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => onRemove(admin.id)}
-                    aria-label={`Remove ${admin.name}`}
-                    className="text-brand-red transition-colors hover:text-brand-red/70"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </td>
+              {!readOnly && (
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <ToggleSwitch
+                      size="sm"
+                      checked={admin.active}
+                      onChange={(checked) => onToggleActive(admin.id, checked)}
+                      label={`${admin.active ? "Deactivate" : "Activate"} ${admin.name}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onRemove(admin.id)}
+                      aria-label={`Remove ${admin.name}`}
+                      className="text-brand-red transition-colors hover:text-brand-red/70"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

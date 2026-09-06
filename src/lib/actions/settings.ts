@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCallerAdmin, NOT_ADMIN_ROLE_MESSAGE } from "@/lib/auth/require-admin";
 import type { PlatformSettings, SettingsSectionKey } from "@/lib/settings-schema";
 
 export interface ActionResult {
@@ -16,13 +17,26 @@ const NOT_CONFIGURED: ActionResult = {
   message: "Supabase is not configured yet — changes cannot be saved.",
 };
 
-/** Persists one section of the platform settings row. */
+const NOT_ADMIN_ROLE: ActionResult = { ok: false, message: NOT_ADMIN_ROLE_MESSAGE };
+
+/**
+ * Persists one section of the platform settings row.
+ *
+ * Admin-only: is_admin() (and therefore RLS) treats every active
+ * admin_users row the same regardless of role, so a moderator — who
+ * should only be able to work with reviews — has to be blocked here in
+ * application code instead.
+ */
 export async function savePlatformSettings<K extends SettingsSectionKey>(
   section: K,
   values: PlatformSettings[K],
 ): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONFIGURED;
+
+  const caller = await getCallerAdmin(supabase);
+  if (!caller) return { ok: false, message: "You don't have admin access." };
+  if (caller.role !== "admin") return NOT_ADMIN_ROLE;
 
   const { error } = await supabase
     .from("platform_settings")
@@ -57,8 +71,10 @@ async function getSiteOrigin() {
  * `admin_users` has no INSERT policy for the regular anon-key client
  * (see supabase/proposed/001_admin_users.sql), so the row write below
  * also goes through the service-role client, which bypasses RLS
- * entirely — meaning the "only an active admin can invite" check has to
- * happen here in application code instead of relying on RLS.
+ * entirely — meaning the "only an admin can invite" check has to happen
+ * here in application code instead of relying on RLS. Admin-only, same
+ * reasoning as savePlatformSettings above: a moderator shouldn't be able
+ * to invite anyone, admin or moderator.
  */
 export async function inviteAdmin(input: {
   fullName: string;
@@ -76,13 +92,9 @@ export async function inviteAdmin(input: {
   const supabase = await createClient();
   if (!supabase) return NOT_CONFIGURED;
 
-  const {
-    data: { user: caller },
-  } = await supabase.auth.getUser();
-  const { data: callerAdmin } = caller
-    ? await supabase.from("admin_users").select("id").eq("auth_user_id", caller.id).eq("active", true).maybeSingle()
-    : { data: null };
-  if (!callerAdmin) return { ok: false, message: "Only an active admin can invite another admin." };
+  const caller = await getCallerAdmin(supabase);
+  if (!caller) return { ok: false, message: "You don't have admin access." };
+  if (caller.role !== "admin") return NOT_ADMIN_ROLE;
 
   const adminClient = createAdminClient();
   if (!adminClient) {
@@ -126,9 +138,14 @@ export async function inviteAdmin(input: {
   return { ok: true, message: `Invite sent to ${email}` };
 }
 
+/** Admin-only — a moderator shouldn't be able to remove anyone. */
 export async function removeAdmin(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONFIGURED;
+
+  const caller = await getCallerAdmin(supabase);
+  if (!caller) return { ok: false, message: "You don't have admin access." };
+  if (caller.role !== "admin") return NOT_ADMIN_ROLE;
 
   const { error } = await supabase.from("admin_users").delete().eq("id", id);
 
@@ -141,9 +158,19 @@ export async function removeAdmin(id: string): Promise<ActionResult> {
   return { ok: true, message: "Admin removed" };
 }
 
+/**
+ * Admin-only — a moderator shouldn't be able to change anyone's role
+ * (including promoting themselves to admin).
+ */
 export async function updateAdminRole(id: string, role: string): Promise<ActionResult> {
+  if (role !== "admin" && role !== "moderator") return { ok: false, message: "Invalid role." };
+
   const supabase = await createClient();
   if (!supabase) return NOT_CONFIGURED;
+
+  const caller = await getCallerAdmin(supabase);
+  if (!caller) return { ok: false, message: "You don't have admin access." };
+  if (caller.role !== "admin") return NOT_ADMIN_ROLE;
 
   const { error } = await supabase.from("admin_users").update({ role }).eq("id", id);
 
@@ -156,9 +183,14 @@ export async function updateAdminRole(id: string, role: string): Promise<ActionR
   return { ok: true, message: "Role updated" };
 }
 
+/** Admin-only — a moderator shouldn't be able to activate/deactivate anyone. */
 export async function setAdminActive(id: string, active: boolean): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONFIGURED;
+
+  const caller = await getCallerAdmin(supabase);
+  if (!caller) return { ok: false, message: "You don't have admin access." };
+  if (caller.role !== "admin") return NOT_ADMIN_ROLE;
 
   const { error } = await supabase.from("admin_users").update({ active }).eq("id", id);
 
@@ -173,10 +205,14 @@ export async function setAdminActive(id: string, active: boolean): Promise<Actio
 
 // ---------------------------------------------------------------- sessions
 
-/** Ends one recorded admin session. */
+/** Ends one recorded admin session. Admin-only — a moderator shouldn't be able to revoke anyone's session. */
 export async function revokeSession(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   if (!supabase) return NOT_CONFIGURED;
+
+  const caller = await getCallerAdmin(supabase);
+  if (!caller) return { ok: false, message: "You don't have admin access." };
+  if (caller.role !== "admin") return NOT_ADMIN_ROLE;
 
   const { error } = await supabase.from("login_activity").delete().eq("id", id);
 
