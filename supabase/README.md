@@ -43,17 +43,30 @@ there.
 | `businesses` | `id, slug, name, category, status, region, city_area, cover_image_url, draft_progress, draft_state, updated_at`, `business_stats(review_count, average_rating)` |
 | `reviews` | `id, business_id, rating, created_at`, `review_photos`, plus fields selected via `REVIEW_SELECT` in `src/lib/data/reviews.ts` |
 | `reports` | `id, reason, status, created_at`, `report_evidence`, `reported_by → full_name`, plus `REPORT_SELECT` in `src/lib/data/reports.ts` |
-| `notifications` | `id, title, description, actor_name, kind, href, read_at, created_at` |
+| `notifications` | Real schema confirmed (2026-09-06, `cassvo_backend`): `id, user_id, type, title, subtitle, image_url, entity_id, is_read, created_at`. Not `description, actor_name, kind, href, read_at` as previously assumed here — this dashboard's own Notifications page doesn't read this table (see `src/lib/data/notifications.ts`'s file comment for why), but `src/lib/actions/system-updates.ts` writes to it to push a System Update to every mobile app user. RLS has no INSERT policy at all (only owner-scoped select/update/delete), so writing here requires the service-role client. |
 | `admin_users` | `id, auth_user_id, full_name, email, role, avatar_url, permissions, active, invite_pending, last_active_at, created_at` |
 | `login_activity` | `id, admin_id, device, browser, location, current, succeeded, created_at` |
 | `platform_settings` | single row keyed `id = true`, JSONB columns `general, moderation, notification, security` |
+| `system_updates` | dashboard-only table, see `supabase/proposed/007_system_updates.sql` |
 
 ## 3. Writes
 
 The Settings pages write to: `platform_settings` (update), `admin_users`
 (insert/update/delete), `login_activity` (delete, for "revoke session").
 Every write goes through `src/lib/actions/settings.ts` — that file is the
-complete list of what this dashboard ever mutates.
+complete list of what this dashboard ever mutates for Settings.
+
+`src/lib/actions/system-updates.ts`'s `postSystemUpdate()` additionally
+writes to `system_updates` (this dashboard's own record) and, separately,
+`notifications` — one row per row in `profiles` — to actually push a
+System Update to every mobile app user. That fan-out relies on a
+Postgres trigger already live on the `cassvo_backend` project,
+`send-push-on-notification` (`AFTER INSERT ON public.notifications`),
+which calls the `send-push` Edge Function to forward the notification to
+Expo's push API for whichever recipients have a `profiles.push_token`.
+Confirmed live 2026-09-06 — not something this dashboard created, but
+worth documenting here since it's the one place this codebase actually
+reaches a real user's phone.
 
 ## 4. Admin access
 

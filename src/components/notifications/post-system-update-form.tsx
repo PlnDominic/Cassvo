@@ -9,7 +9,9 @@ import { postSystemUpdate } from "@/lib/actions/system-updates";
  * this component just hides the control from a moderator rather than
  * showing it and letting the server action reject it). Posts a real row
  * to system_updates, which src/lib/data/notifications.ts then reads back
- * as a "systemUpdate"-gated event, same as any other notification kind.
+ * as a "systemUpdate"-gated event on this dashboard, and (separately)
+ * fans out to every mobile app user as a real push notification — see
+ * postSystemUpdate's own comment for that mechanism.
  */
 export function PostSystemUpdateForm({ viewerIsAdmin }: { viewerIsAdmin: boolean }) {
   const [open, setOpen] = useState(false);
@@ -29,7 +31,13 @@ export function PostSystemUpdateForm({ viewerIsAdmin }: { viewerIsAdmin: boolean
       if (outcome.ok) {
         setTitle("");
         setDescription("");
-        setOpen(false);
+        // Left open long enough to read the real outcome — "Posted and
+        // pushed to all users" vs. a push-failed warning look identical
+        // at a glance, and closing immediately would hide the difference.
+        window.setTimeout(() => {
+          setOpen(false);
+          setResult(null);
+        }, 4000);
       }
     });
   }
@@ -90,7 +98,7 @@ export function PostSystemUpdateForm({ viewerIsAdmin }: { viewerIsAdmin: boolean
         {result?.ok && (
           <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-600">
             <Check size={16} />
-            Posted
+            {result.message}
           </span>
         )}
         <button
