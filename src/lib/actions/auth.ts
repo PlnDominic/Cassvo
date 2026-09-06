@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { RATE_LIMIT_WINDOW_MINUTES, MAX_FAILED_ATTEMPTS } from "@/lib/auth/rate-limit";
+import { getRateLimitConfig } from "@/lib/auth/rate-limit";
 import type { ActionResult } from "./settings";
 
 const NOT_CONFIGURED: ActionResult = {
@@ -17,8 +17,6 @@ const NOT_CONFIGURED: ActionResult = {
 // admin access (this is the same fix as security finding #2).
 const LOGIN_FAILED_MESSAGE = "Incorrect email or password, or this account doesn't have admin access.";
 
-const RATE_LIMITED_MESSAGE = "Too many failed attempts. Try again in a few minutes.";
-
 /**
  * Signing in has to happen here, server-side, rather than via
  * supabase-js directly from the browser (as it did before) — that's
@@ -26,6 +24,11 @@ const RATE_LIMITED_MESSAGE = "Too many failed attempts. Try again in a few minut
  * ran client-side would be trivially bypassed by anyone scripting
  * requests straight at this form; running it here means every attempt
  * that goes through this app's own login page is actually gated.
+ *
+ * The threshold and window come from Settings → Security
+ * (getRateLimitConfig() — platform_settings.security.failedLoginLimit /
+ * lockoutMinutes), not fixed constants, so changing them there actually
+ * changes what gets enforced here.
  *
  * This doesn't replace Supabase Auth's own project-level rate limits
  * (Dashboard → Authentication → Rate Limits), which are the backstop
@@ -43,7 +46,8 @@ export async function loginWithPassword(emailInput: string, password: string): P
 
   const adminClient = createAdminClient();
   if (adminClient) {
-    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
+    const { maxFailedAttempts, windowMinutes } = await getRateLimitConfig(adminClient);
+    const windowStart = new Date(Date.now() - windowMinutes * 60 * 1000).toISOString();
     const { count } = await adminClient
       .from("login_attempts")
       .select("id", { count: "exact", head: true })
@@ -51,8 +55,8 @@ export async function loginWithPassword(emailInput: string, password: string): P
       .eq("succeeded", false)
       .gte("created_at", windowStart);
 
-    if ((count ?? 0) >= MAX_FAILED_ATTEMPTS) {
-      return { ok: false, message: RATE_LIMITED_MESSAGE };
+    if ((count ?? 0) >= maxFailedAttempts) {
+      return { ok: false, message: `Too many failed attempts. Try again in ${windowMinutes} minutes.` };
     }
   }
   // No adminClient (SUPABASE_SERVICE_ROLE_KEY not set) — degrades to no

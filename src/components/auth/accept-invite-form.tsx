@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, TriangleAlert } from "lucide-react";
 import { TextField } from "@/components/ui/text-field";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { DEFAULT_SETTINGS, checkPasswordPolicy, mergeSettings, type SecuritySettings } from "@/lib/settings-schema";
 
 /**
  * Landing page for the link in Supabase's invite email. The link carries
@@ -32,6 +33,9 @@ export function AcceptInviteForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [passwordPolicy, setPasswordPolicy] = useState<SecuritySettings["passwordPolicy"]>(
+    DEFAULT_SETTINGS.security.passwordPolicy,
+  );
 
   useEffect(() => {
     const supabase = createClient();
@@ -63,12 +67,32 @@ export function AcceptInviteForm() {
     resolveSession();
   }, []);
 
+  // Once signed in (see resolveSession above), this invitee has a real
+  // admin_users row already — created alongside the invite itself in
+  // inviteAdmin() — so platform_settings' is_admin()-gated SELECT policy
+  // lets them read the real saved password policy, not just the default.
+  useEffect(() => {
+    if (status !== "ready") return;
+    const supabase = createClient();
+    if (!supabase) return;
+
+    supabase
+      .from("platform_settings")
+      .select("security")
+      .eq("id", true)
+      .maybeSingle()
+      .then(({ data }) => {
+        setPasswordPolicy(mergeSettings(DEFAULT_SETTINGS.security, data?.security).passwordPolicy);
+      });
+  }, [status]);
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    const problems = checkPasswordPolicy(password, passwordPolicy);
+    if (problems.length > 0) {
+      setError(`Password must include ${problems.join(", ")}.`);
       return;
     }
     if (password !== confirmPassword) {
@@ -136,6 +160,12 @@ export function AcceptInviteForm() {
           </button>
         }
       />
+      <p className="-mt-4 text-sm text-white/50">
+        Must be at least 8 characters
+        {passwordPolicy.requireUppercase && ", include an uppercase letter"}
+        {passwordPolicy.requireNumbers && ", a number"}
+        {passwordPolicy.requireSpecialCharacters && ", and a special character"}.
+      </p>
 
       <TextField
         id="confirm-password"

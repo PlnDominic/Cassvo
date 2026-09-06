@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { DEFAULT_SETTINGS, mergeSettings } from "@/lib/settings-schema";
 
 /** Coarse device/browser labels from the UA string — good enough for a sessions list, not a fingerprint. */
 function parseUserAgent(ua: string) {
@@ -34,6 +35,13 @@ function parseUserAgent(ua: string) {
  * sign-up. Best-effort: a failure here (table not created yet, RLS not
  * applied yet) is logged and swallowed rather than blocking access —
  * this is a nice-to-have audit trail, not a gate.
+ *
+ * Settings → Security's "Session Monitoring" toggle
+ * (platform_settings.security.authentication.sessionMonitoring) gates
+ * this: explicitly off means no row gets written at all, not just
+ * hidden from view. Missing/unset (table not applied yet, or no row)
+ * defaults to on, matching DEFAULT_SETTINGS and this feature's
+ * always-on behavior before this toggle did anything.
  */
 export async function recordLoginSession(supabase: SupabaseClient) {
   try {
@@ -48,6 +56,10 @@ export async function recordLoginSession(supabase: SupabaseClient) {
       .eq("auth_user_id", user.id)
       .maybeSingle();
     if (!admin) return;
+
+    const { data: settingsRow } = await supabase.from("platform_settings").select("security").eq("id", true).maybeSingle();
+    const security = mergeSettings(DEFAULT_SETTINGS.security, settingsRow?.security);
+    if (!security.authentication.sessionMonitoring) return;
 
     const { device, browser } = parseUserAgent(navigator.userAgent);
 

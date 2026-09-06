@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { RATE_LIMIT_WINDOW_MINUTES, MAX_FAILED_ATTEMPTS } from "@/lib/auth/rate-limit";
+import { getRateLimitConfig } from "@/lib/auth/rate-limit";
 import type { NotificationItem, NotificationBadgeVariant } from "@/components/notifications/types";
 import { formatRelative } from "@/lib/format";
 import { one } from "./util";
@@ -20,13 +20,14 @@ import type { NotificationSettings } from "@/lib/settings-schema";
  *
  * securityAlert has a real source too: login_attempts (the failed-login
  * rate-limit log from src/lib/actions/auth.ts / security finding #6) —
- * an email that's hit the same MAX_FAILED_ATTEMPTS-within-
- * RATE_LIMIT_WINDOW_MINUTES threshold the login form itself blocks on is
- * a genuine security-relevant event, not a fabricated one. login_attempts
- * has zero RLS policies by design (service-role only, see
- * supabase/proposed/005_login_attempts.sql), so reading it here goes
- * through createAdminClient() rather than the regular anon-key client
- * every other query in this file uses.
+ * an email that's hit the same failed-attempt threshold, within the
+ * same window, that the login form itself blocks on (both configurable
+ * from Settings → Security — see src/lib/auth/rate-limit.ts's
+ * getRateLimitConfig()) is a genuine security-relevant event, not a
+ * fabricated one. login_attempts has zero RLS policies by design
+ * (service-role only, see supabase/proposed/005_login_attempts.sql), so
+ * reading it here goes through createAdminClient() rather than the
+ * regular anon-key client every other query in this file uses.
  *
  * systemUpdate has a real source now too: system_updates, an
  * admin-posted announcements table (supabase/proposed/007_system_updates.sql,
@@ -94,21 +95,24 @@ interface SecurityAlert {
 }
 
 /**
- * One alert per email currently at or over MAX_FAILED_ATTEMPTS failed
- * sign-ins within the last RATE_LIMIT_WINDOW_MINUTES — the exact
- * threshold the login form itself rate-limits on. Naturally self-clears
- * from the feed once that email's failures age out of the window,
- * without needing any separate "resolved" state.
+ * One alert per email currently at or over the Settings → Security
+ * failed-attempt threshold within its configured lockout window (the
+ * exact same values getRateLimitConfig() computes for the login form
+ * itself — see its own comment for why this needs a service-role
+ * client). Naturally self-clears from the feed once that email's
+ * failures age out of the window, without needing any separate
+ * "resolved" state.
  *
- * Returns [] (not an error) when SUPABASE_SERVICE_ROLE_KEY isn't set —
- * same graceful-degradation pattern as every other service-role-
- * dependent feature in this app.
+ * Returns a zero windowMinutes/empty alerts result (not an error) when
+ * SUPABASE_SERVICE_ROLE_KEY isn't set — same graceful-degradation
+ * pattern as every other service-role-dependent feature in this app.
  */
-async function getSecurityAlerts(): Promise<SecurityAlert[]> {
+async function getSecurityAlerts(): Promise<{ windowMinutes: number; alerts: SecurityAlert[] }> {
   const adminClient = createAdminClient();
-  if (!adminClient) return [];
+  const { maxFailedAttempts, windowMinutes } = await getRateLimitConfig(adminClient);
+  if (!adminClient) return { windowMinutes, alerts: [] };
 
-  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
+  const windowStart = new Date(Date.now() - windowMinutes * 60 * 1000).toISOString();
   const { data, error } = await adminClient
     .from("login_attempts")
     .select("email, created_at")
@@ -118,7 +122,7 @@ async function getSecurityAlerts(): Promise<SecurityAlert[]> {
 
   if (error) {
     console.error("getSecurityAlerts:", error.message);
-    return [];
+    return { windowMinutes, alerts: [] };
   }
 
   // Rows arrive newest-first, so the first row seen for an email is its
@@ -130,7 +134,7 @@ async function getSecurityAlerts(): Promise<SecurityAlert[]> {
     else byEmail.set(row.email, { email: row.email, count: 1, createdAt: row.created_at });
   }
 
-  return [...byEmail.values()].filter((alert) => alert.count >= MAX_FAILED_ATTEMPTS);
+  return { windowMinutes, alerts: [...byEmail.values()].filter((alert) => alert.count >= maxFailedAttempts) };
 }
 
 async function getRecentEvents(limit: number): Promise<Event[]> {
@@ -235,14 +239,14 @@ async function getRecentEvents(limit: number): Promise<Event[]> {
   }
 
   if (wants.securityAlert) {
-    for (const alert of securityAlerts) {
+    for (const alert of securityAlerts.alerts) {
       events.push({
         id: `security-${alert.email}`,
         kind: "security",
         settingKey: "securityAlert",
         avatarName: alert.email,
         title: "Security Alert",
-        description: `${alert.count} failed sign-in attempts for ${alert.email} in the last ${RATE_LIMIT_WINDOW_MINUTES} minutes`,
+        description: `${alert.count} failed sign-in attempts for ${alert.email} in the last ${securityAlerts.windowMinutes} minutes`,
         href: "/settings",
         createdAt: alert.createdAt,
       });

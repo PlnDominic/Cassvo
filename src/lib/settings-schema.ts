@@ -175,6 +175,24 @@ export const PASSWORD_POLICY_LABELS: Record<keyof SecuritySettings["passwordPoli
   requireSpecialCharacters: "Require Special Characters",
 };
 
+/**
+ * Checks a candidate password against Settings → Security's saved
+ * password policy (platform_settings.security.passwordPolicy) — the
+ * only place in this app a password is ever set is
+ * accept-invite-form.tsx, which uses this instead of just a fixed
+ * length check. Returns the human-readable list of unmet requirements
+ * (empty means the password passes); the 8-character minimum applies
+ * regardless of what's toggled on.
+ */
+export function checkPasswordPolicy(password: string, policy: SecuritySettings["passwordPolicy"]): string[] {
+  const problems: string[] = [];
+  if (password.length < 8) problems.push("at least 8 characters");
+  if (policy.requireUppercase && !/[A-Z]/.test(password)) problems.push("an uppercase letter");
+  if (policy.requireNumbers && !/[0-9]/.test(password)) problems.push("a number");
+  if (policy.requireSpecialCharacters && !/[^A-Za-z0-9]/.test(password)) problems.push("a special character");
+  return problems;
+}
+
 // ---------------------------------------------------------------- options
 
 export const COUNTRIES = ["Ghana", "Nigeria", "Kenya", "South Africa"];
