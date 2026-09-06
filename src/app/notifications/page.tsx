@@ -2,13 +2,19 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { NotificationsBoard } from "@/components/notifications/notifications-board";
+import { PostSystemUpdateForm } from "@/components/notifications/post-system-update-form";
 import { getNotifications, getNotificationCounts } from "@/lib/data/notifications";
+import { getCurrentAdmin } from "@/lib/data/admins";
 import { formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
-  const [{ today, yesterday }, counts] = await Promise.all([getNotifications(), getNotificationCounts()]);
+  const [{ today, yesterday }, counts, admin] = await Promise.all([
+    getNotifications(),
+    getNotificationCounts(),
+    getCurrentAdmin(),
+  ]);
 
   return (
     <DashboardShell title="Notification">
@@ -21,6 +27,8 @@ export default async function NotificationsPage() {
           <StatCard label="High Priority" value={formatNumber(counts.highPriority)} />
           <StatCard label="System Alerts" value={formatNumber(counts.systemAlerts)} />
         </div>
+
+        <PostSystemUpdateForm viewerIsAdmin={admin?.role === "Admin"} />
 
         <NotificationsBoard today={today} yesterday={yesterday} />
       </div>

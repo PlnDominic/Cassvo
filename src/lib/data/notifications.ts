@@ -28,9 +28,12 @@ import type { NotificationSettings } from "@/lib/settings-schema";
  * through createAdminClient() rather than the regular anon-key client
  * every other query in this file uses.
  *
- * systemUpdate still has no real source — nothing in this app tracks
- * deploys, maintenance windows, or product announcements — so that
- * category stays honestly empty, same reasoning as before.
+ * systemUpdate has a real source now too: system_updates, an
+ * admin-posted announcements table (supabase/proposed/007_system_updates.sql,
+ * posted via src/lib/actions/system-updates.ts's postSystemUpdate()) —
+ * nothing auto-generates these, an admin writes them, but once posted
+ * they're real rows, not synthesized ones like every other event kind
+ * here.
  *
  * Settings → Notifications' "Notify Me About" toggles
  * (platform_settings.notification.events, see settings-schema.ts) gate
@@ -43,13 +46,14 @@ import type { NotificationSettings } from "@/lib/settings-schema";
  */
 
 type EventKey = keyof NotificationSettings["events"];
-type Kind = "review" | "flag" | "business" | "security";
+type Kind = "review" | "flag" | "business" | "security" | "update";
 
 const KIND_META: Record<Kind, { icon: "review" | "business" | "user" | "system"; badgeLabel: string; badgeVariant: NotificationBadgeVariant }> = {
   review: { icon: "review", badgeLabel: "Review", badgeVariant: "red" },
   flag: { icon: "system", badgeLabel: "Flagged", badgeVariant: "amber" },
   business: { icon: "business", badgeLabel: "Business", badgeVariant: "green" },
   security: { icon: "system", badgeLabel: "Security", badgeVariant: "red" },
+  update: { icon: "system", badgeLabel: "Update", badgeVariant: "green" },
 };
 
 interface Event {
@@ -133,9 +137,14 @@ async function getRecentEvents(limit: number): Promise<Event[]> {
   const supabase = await createClient();
   if (!supabase) return [];
 
-  const [settings, securityAlerts, reviews, reviewReports, problemReports, businesses] = await Promise.all([
+  const [settings, securityAlerts, systemUpdates, reviews, reviewReports, problemReports, businesses] = await Promise.all([
     getPlatformSettings(),
     getSecurityAlerts(),
+    supabase
+      .from("system_updates")
+      .select("id, title, description, created_at, author:admin_users!created_by (full_name)")
+      .order("created_at", { ascending: false })
+      .limit(limit),
     supabase
       .from("reviews")
       .select("id, content, business_id, created_at, author:profiles!user_id (full_name), business:businesses!business_id (name)")
@@ -240,8 +249,21 @@ async function getRecentEvents(limit: number): Promise<Event[]> {
     }
   }
 
-  // systemUpdate has no real event source to gate — see the file-level
-  // comment — so that toggle has nothing to do yet regardless of on/off.
+  if (wants.systemUpdate) {
+    for (const row of systemUpdates.data ?? []) {
+      const author = one<{ full_name: string }>(row.author);
+      events.push({
+        id: `system-update-${row.id}`,
+        kind: "update",
+        settingKey: "systemUpdate",
+        avatarName: author?.full_name ?? "Cassvo Team",
+        title: row.title,
+        description: row.description ?? row.title,
+        href: "/notifications",
+        createdAt: row.created_at,
+      });
+    }
+  }
 
   return events.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, limit);
 }
