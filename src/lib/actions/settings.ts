@@ -19,13 +19,27 @@ const NOT_CONFIGURED: ActionResult = {
 
 const NOT_ADMIN_ROLE: ActionResult = { ok: false, message: NOT_ADMIN_ROLE_MESSAGE };
 
+const SETTINGS_NOT_READY: ActionResult = {
+  ok: false,
+  message: "Settings aren't set up yet — run supabase/proposed/006_platform_settings.sql first.",
+};
+
+/** True for a Postgres "relation does not exist" or PostgREST's schema-cache equivalent. */
+function isMissingTableError(error: { code?: string; message?: string } | null) {
+  return error?.code === "42P01" || error?.code === "PGRST205" || Boolean(error?.message?.includes("platform_settings"));
+}
+
 /**
- * Persists one section of the platform settings row.
+ * Persists one section of the platform settings row (see
+ * supabase/proposed/006_platform_settings.sql for the table this writes
+ * to, and src/lib/data/settings.ts for the matching read path).
  *
- * Admin-only: is_admin() (and therefore RLS) treats every active
- * admin_users row the same regardless of role, so a moderator — who
- * should only be able to work with reviews — has to be blocked here in
- * application code instead.
+ * Admin-only: is_admin() only checks "does this session have an active
+ * admin_users row," never role, so platform_settings' own RLS UPDATE
+ * policy is gated on is_super_admin() instead — but that's enforced here
+ * too, in application code, since this is also where the friendlier
+ * NOT_ADMIN_ROLE_MESSAGE comes from (RLS alone would just report 0 rows
+ * changed, indistinguishable from "this table doesn't exist yet").
  */
 export async function savePlatformSettings<K extends SettingsSectionKey>(
   section: K,
@@ -38,15 +52,17 @@ export async function savePlatformSettings<K extends SettingsSectionKey>(
   if (!caller) return { ok: false, message: "You don't have admin access." };
   if (caller.role !== "admin") return NOT_ADMIN_ROLE;
 
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from("platform_settings")
-    .update({ [section]: values, updated_at: new Date().toISOString() })
+    .update({ [section]: values, updated_at: new Date().toISOString() }, { count: "exact" })
     .eq("id", true);
 
   if (error) {
+    if (isMissingTableError(error)) return SETTINGS_NOT_READY;
     console.error("savePlatformSettings:", error.message);
     return { ok: false, message: error.message };
   }
+  if (count === 0) return SETTINGS_NOT_READY;
 
   revalidatePath("/settings");
   return { ok: true, message: "Saved" };
