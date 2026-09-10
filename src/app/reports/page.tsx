@@ -1,8 +1,7 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { ReportsToolbar } from "@/components/reports/reports-toolbar";
-import { ReportsTable } from "@/components/reports/reports-table";
+import { ReportsBoard } from "@/components/reports/reports-board";
 import { getReports, getReportCounts } from "@/lib/data/reports";
 import { formatNumber } from "@/lib/format";
 
@@ -22,9 +21,7 @@ export default async function ReportsPage() {
           <StatCard label="Problem Reports" value={formatNumber(counts.problemReports)} iconColor="green" />
         </div>
 
-        <ReportsToolbar />
-
-        <ReportsTable reports={reports} />
+        <ReportsBoard reports={reports} />
       </div>
     </DashboardShell>
   );

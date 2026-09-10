@@ -3,11 +3,22 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-const PERIODS = ["This Week", "This Month", "This Year", "All Time"];
+export const PERIODS = ["This Week", "This Month", "This Year", "All Time"] as const;
+export type Period = (typeof PERIODS)[number];
 
-export function PeriodDropdown({ defaultValue = "This Week" }: { defaultValue?: string }) {
+export function PeriodDropdown({
+  value,
+  defaultValue = "This Week",
+  onChange,
+}: {
+  /** Controlled selection — pass this + onChange to actually drive real filtering. Omit for a purely decorative dropdown (uncontrolled, local-only). */
+  value?: Period;
+  defaultValue?: Period;
+  onChange?: (period: Period) => void;
+}) {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState(defaultValue);
+  const [internalSelected, setInternalSelected] = useState<Period>(defaultValue);
+  const selected = value ?? internalSelected;
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,7 +56,8 @@ export function PeriodDropdown({ defaultValue = "This Week" }: { defaultValue?: 
               role="option"
               aria-selected={period === selected}
               onClick={() => {
-                setSelected(period);
+                setInternalSelected(period);
+                onChange?.(period);
                 setOpen(false);
               }}
               className={`block w-full px-3 py-2 text-left text-xs font-medium tracking-[0.01em] hover:bg-[#f7f7f8] ${

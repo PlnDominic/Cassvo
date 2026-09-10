@@ -146,57 +146,112 @@ export async function getCategoryPerformance() {
     .sort((a, b) => b.reviews - a.reviews);
 }
 
-/** Daily review counts over the last `days` days, for the growth charts. */
-export async function getReviewGrowth(days = 8) {
-  const supabase = await createClient();
-  const since = new Date();
-  since.setDate(since.getDate() - (days - 1));
-  since.setHours(0, 0, 0, 0);
+export type GrowthPeriod = "This Week" | "This Month" | "This Year" | "All Time";
 
-  const buckets = Array.from({ length: days }, (_, i) => {
+/**
+ * Turns a Period dropdown selection into an actual query window + bucket
+ * granularity — this is the piece that was entirely missing before: the
+ * dropdown changed its own label and nothing else. Week/Month use daily
+ * buckets (7/30 points); Year uses monthly buckets (12 points) rather
+ * than 365 daily ones, which would be unreadable in these line charts.
+ * All Time also buckets monthly, from the real earliest row for the
+ * given table (not a guessed constant) — capped at 60 months as a
+ * sanity bound, not because the platform is actually that old.
+ */
+async function resolvePeriodWindow(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  table: "reviews" | "profiles",
+  period: GrowthPeriod,
+): Promise<{ since: Date; granularity: "day" | "month" }> {
+  const now = new Date();
+
+  if (period === "This Week") {
+    const since = new Date(now);
+    since.setDate(now.getDate() - 6);
+    since.setHours(0, 0, 0, 0);
+    return { since, granularity: "day" };
+  }
+  if (period === "This Month") {
+    const since = new Date(now);
+    since.setDate(now.getDate() - 29);
+    since.setHours(0, 0, 0, 0);
+    return { since, granularity: "day" };
+  }
+  if (period === "This Year") {
+    const since = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    return { since, granularity: "month" };
+  }
+
+  // All Time: from the earliest real row, capped at 60 months back.
+  const { data: earliest } = await supabase.from(table).select("created_at").order("created_at", { ascending: true }).limit(1).maybeSingle();
+  const floor = new Date(now.getFullYear(), now.getMonth() - 59, 1);
+  const earliestDate = earliest ? new Date(earliest.created_at) : floor;
+  const since = earliestDate > floor ? new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1) : floor;
+  return { since, granularity: "month" };
+}
+
+function dayBuckets(since: Date, now: Date) {
+  const days = Math.round((now.getTime() - since.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+  return Array.from({ length: days }, (_, i) => {
     const date = new Date(since);
     date.setDate(since.getDate() + i);
     return { date, label: date.toLocaleDateString("en-GB", { month: "short", day: "numeric" }), value: 0 };
   });
+}
 
-  if (!supabase) return buckets.map(({ label, value }) => ({ label, value }));
+function monthBuckets(since: Date, now: Date) {
+  const months =
+    (now.getFullYear() - since.getFullYear()) * 12 + (now.getMonth() - since.getMonth()) + 1;
+  return Array.from({ length: months }, (_, i) => {
+    const date = new Date(since.getFullYear(), since.getMonth() + i, 1);
+    return { date, label: date.toLocaleDateString("en-GB", { month: "short", year: "2-digit" }), value: 0 };
+  });
+}
 
-  const { data } = await supabase.from("reviews").select("created_at").gte("created_at", since.toISOString());
+/**
+ * Row counts for `table`, bucketed to match the selected period — backs
+ * both the User Growth and Review Growth charts. Replaces the old
+ * getReviewGrowth/getMemberGrowth, which always showed the same fixed
+ * last-8-days window regardless of what the (previously non-functional)
+ * Period dropdown said.
+ */
+async function getGrowthSeries(table: "reviews" | "profiles", period: GrowthPeriod) {
+  const supabase = await createClient();
+  const now = new Date();
+
+  if (!supabase) {
+    // Unconfigured: still return a correctly-shaped empty series for the period.
+    const since = period === "This Week" ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6) : now;
+    return dayBuckets(since, now).map(({ label, value }) => ({ label, value }));
+  }
+
+  const { since, granularity } = await resolvePeriodWindow(supabase, table, period);
+  const buckets = granularity === "day" ? dayBuckets(since, now) : monthBuckets(since, now);
+
+  const { data } = await supabase.from(table).select("created_at").gte("created_at", since.toISOString());
 
   for (const row of data ?? []) {
-    const day = new Date(row.created_at);
-    day.setHours(0, 0, 0, 0);
-    const bucket = buckets.find((b) => b.date.getTime() === day.getTime());
+    const rowDate = new Date(row.created_at);
+    const bucket =
+      granularity === "day"
+        ? buckets.find((b) => {
+            const d = new Date(rowDate);
+            d.setHours(0, 0, 0, 0);
+            return b.date.getTime() === d.getTime();
+          })
+        : buckets.find((b) => b.date.getFullYear() === rowDate.getFullYear() && b.date.getMonth() === rowDate.getMonth());
     if (bucket) bucket.value += 1;
   }
 
   return buckets.map(({ label, value }) => ({ label, value }));
 }
 
-export async function getMemberGrowth(days = 8) {
-  const supabase = await createClient();
-  const since = new Date();
-  since.setDate(since.getDate() - (days - 1));
-  since.setHours(0, 0, 0, 0);
+export async function getReviewGrowth(period: GrowthPeriod = "This Week") {
+  return getGrowthSeries("reviews", period);
+}
 
-  const buckets = Array.from({ length: days }, (_, i) => {
-    const date = new Date(since);
-    date.setDate(since.getDate() + i);
-    return { date, label: date.toLocaleDateString("en-GB", { month: "short", day: "numeric" }), value: 0 };
-  });
-
-  if (!supabase) return buckets.map(({ label, value }) => ({ label, value }));
-
-  const { data } = await supabase.from("profiles").select("created_at").gte("created_at", since.toISOString());
-
-  for (const row of data ?? []) {
-    const day = new Date(row.created_at);
-    day.setHours(0, 0, 0, 0);
-    const bucket = buckets.find((b) => b.date.getTime() === day.getTime());
-    if (bucket) bucket.value += 1;
-  }
-
-  return buckets.map(({ label, value }) => ({ label, value }));
+export async function getMemberGrowth(period: GrowthPeriod = "This Week") {
+  return getGrowthSeries("profiles", period);
 }
 
 export interface RegionStat {
@@ -252,9 +307,67 @@ async function getLocationStats(limit?: number) {
   return limit ? ranked.slice(0, limit) : ranked;
 }
 
-/** Review volume and ratings grouped by business location. */
-export async function getRegionStats(): Promise<RegionStat[]> {
-  return getLocationStats();
+/**
+ * Same grouping as getLocationStats(), but bounded to reviews actually
+ * posted within `period` — needed because businesses.reviews_count/
+ * rating are running all-time totals, not events with a date, so they
+ * can't answer "reviews this week." Queries `reviews` directly instead
+ * (joined to each business's location) and aggregates in JS.
+ */
+async function getLocationStatsForPeriod(period: GrowthPeriod): Promise<RegionStat[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { since } = await resolvePeriodWindow(supabase, "reviews", period);
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("rating, business:businesses!business_id (id, location)")
+    .gte("created_at", since.toISOString());
+
+  if (error) {
+    console.error("getLocationStatsForPeriod:", error.message);
+    return [];
+  }
+
+  const byLocation = new Map<string, { reviews: number; ratingSum: number; rated: number; businesses: Set<string> }>();
+  for (const row of data ?? []) {
+    const business = one<{ id: string; location: string | null }>(row.business);
+    if (!business) continue;
+    const location = business.location?.trim();
+    if (!location) continue;
+
+    const entry = byLocation.get(location) ?? { reviews: 0, ratingSum: 0, rated: 0, businesses: new Set<string>() };
+    entry.reviews += 1;
+    entry.businesses.add(business.id);
+    if (row.rating != null && row.rating > 0) {
+      entry.ratingSum += row.rating;
+      entry.rated += 1;
+    }
+    byLocation.set(location, entry);
+  }
+
+  return [...byLocation.entries()]
+    .map(([name, e]) => ({
+      name,
+      reviewCount: e.reviews,
+      averageRating: e.rated ? Math.round((e.ratingSum / e.rated) * 10) / 10 : null,
+      businessCount: e.businesses.size,
+    }))
+    .sort((a, b) => b.reviewCount - a.reviewCount);
+}
+
+/**
+ * Review volume and ratings grouped by business location. "All Time"
+ * (the default, and the Review Map page's original always-on behavior)
+ * uses the fast, already-denormalized businesses.reviews_count/rating
+ * columns; any other period re-derives real numbers from reviews itself
+ * — see getLocationStatsForPeriod()'s own comment for why that's
+ * necessary rather than just filtering the same denormalized totals.
+ */
+export async function getRegionStats(period: GrowthPeriod = "All Time"): Promise<RegionStat[]> {
+  if (period === "All Time") return getLocationStats();
+  return getLocationStatsForPeriod(period);
 }
 
 export interface TrustScore {

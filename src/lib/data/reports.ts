@@ -65,6 +65,7 @@ export async function getReports(): Promise<ReportRow[]> {
           reportedBy: names.get(row.reporter_id) ?? "—",
           reason: row.reason,
           date: formatRelative(row.created_at),
+          createdAt: row.created_at,
         } satisfies ReportRow,
       };
     }),
@@ -78,6 +79,7 @@ export async function getReports(): Promise<ReportRow[]> {
         reportedBy: names.get(row.user_id) ?? row.contact_email ?? "Anonymous",
         reason: row.message,
         date: formatRelative(row.created_at),
+        createdAt: row.created_at,
       } satisfies ReportRow,
     })),
   ];

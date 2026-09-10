@@ -5,6 +5,7 @@ import { AnalyticsToolbar } from "@/components/analytics/analytics-toolbar";
 import { AnalyticsLineChart } from "@/components/analytics/analytics-line-chart";
 import { TopBusinessesCard, type TopBusiness } from "@/components/analytics/top-businesses-card";
 import { CategoryPerformanceBars } from "@/components/analytics/category-performance-bars";
+import { PERIODS, type Period } from "@/components/dashboard/period-dropdown";
 import { getUserCounts } from "@/lib/data/users";
 import { getBusinessCounts } from "@/lib/data/businesses";
 import { getReviewCounts } from "@/lib/data/reviews";
@@ -13,20 +14,32 @@ import {
   getCategoryPerformance,
   getReviewGrowth,
   getMemberGrowth,
+  type GrowthPeriod,
 } from "@/lib/data/dashboard";
 import { formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default async function AnalyticsPage() {
+function resolvePeriod(raw: string | string[] | undefined): Period {
+  return (PERIODS as readonly string[]).includes(raw as string) ? (raw as Period) : "This Week";
+}
+
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const { period: rawPeriod } = await searchParams;
+  const period: GrowthPeriod = resolvePeriod(rawPeriod);
+
   const [users, businesses, reviews, trending, categories, reviewGrowth, memberGrowth] = await Promise.all([
     getUserCounts(),
     getBusinessCounts(),
     getReviewCounts(),
     getTrendingBusinesses(4),
     getCategoryPerformance(),
-    getReviewGrowth(),
-    getMemberGrowth(),
+    getReviewGrowth(period),
+    getMemberGrowth(period),
   ]);
 
   const topBusinesses: TopBusiness[] = trending.map((b) => ({
@@ -56,6 +69,7 @@ export default async function AnalyticsPage() {
         </div>
 
         <AnalyticsToolbar
+          period={period}
           userGrowth={memberGrowth}
           reviewGrowth={reviewGrowth}
           topBusinesses={topBusinesses}

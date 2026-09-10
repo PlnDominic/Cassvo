@@ -1,23 +1,33 @@
 "use client";
 
+import { useRouter, usePathname } from "next/navigation";
 import { Upload } from "lucide-react";
-import { PeriodDropdown } from "../dashboard/period-dropdown";
+import { PeriodDropdown, type Period } from "../dashboard/period-dropdown";
 import { downloadCsv } from "@/lib/download-csv";
 import type { ChartPoint } from "./analytics-line-chart";
 import type { TopBusiness } from "./top-businesses-card";
 import type { CategoryPerformanceItem } from "./category-performance-bars";
 
 export function AnalyticsToolbar({
+  period,
   userGrowth,
   reviewGrowth,
   topBusinesses,
   categories,
 }: {
+  period: Period;
   userGrowth: ChartPoint[];
   reviewGrowth: ChartPoint[];
   topBusinesses: TopBusiness[];
   categories: CategoryPerformanceItem[];
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  function handlePeriodChange(next: Period) {
+    router.push(`${pathname}?period=${encodeURIComponent(next)}`);
+  }
+
   function handleExport() {
     const rows: string[][] = [
       ...userGrowth.map((p) => ["User Growth", p.label, String(p.value)]),
@@ -25,12 +35,12 @@ export function AnalyticsToolbar({
       ...topBusinesses.map((b) => ["Top Business", b.name, `${b.rating} (${b.reviewCount} reviews) ${b.change}`]),
       ...categories.map((c) => ["Category Performance", c.label, `${c.percent}%`]),
     ];
-    downloadCsv("cassvo-analytics.csv", ["Section", "Label", "Value"], rows);
+    downloadCsv(`cassvo-analytics-${period.toLowerCase().replace(/\s+/g, "-")}.csv`, ["Section", "Label", "Value"], rows);
   }
 
   return (
     <div className="flex items-center gap-3">
-      <PeriodDropdown defaultValue="This Month" />
+      <PeriodDropdown value={period} onChange={handlePeriodChange} />
       <button
         type="button"
         onClick={handleExport}
