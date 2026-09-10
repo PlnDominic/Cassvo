@@ -13,15 +13,17 @@ export function VerificationStep({
     onChange({ documents: data.documents.filter((doc) => doc.id !== id) });
   }
 
-  function addPhoto(preview: string) {
-    onChange({ additionalPhotos: [...data.additionalPhotos, { id: crypto.randomUUID(), preview }] });
+  function addPhoto(file: File, preview: string) {
+    onChange({ additionalPhotos: [...data.additionalPhotos, { id: crypto.randomUUID(), preview, file }] });
   }
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
       <div>
         <h3 className="text-sm font-medium text-[#060606]">Verification Document</h3>
-        <p className="mb-4 text-xs text-[#939393]">Upload documents to verify this business</p>
+        <p className="mb-4 text-xs text-[#939393]">
+          Upload documents to verify this business — preview only for now, not saved yet
+        </p>
         <DocumentList documents={data.documents} onRemove={removeDocument} />
       </div>
 

@@ -8,15 +8,20 @@ import { BusinessesTable } from "./businesses-table";
 import type { Business, BusinessStatus } from "./types";
 
 const MAX_FEATURED = 2;
+const ALL_CATEGORIES = "All Categories";
 
 export function BusinessesBoard({
   businesses: initialBusinesses,
   initialFeaturedIds,
+  categoryOptions,
 }: {
   businesses: Business[];
   initialFeaturedIds: string[];
+  /** Real category titles — see getCategories(); this page doesn't need "Uncategorized" as a filterable option since it's a fallback label, not a real category. */
+  categoryOptions: string[];
 }) {
   const [tab, setTab] = useState<BusinessTab>("all");
+  const [category, setCategory] = useState(ALL_CATEGORIES);
   const [featuredIds, setFeaturedIds] = useState(initialFeaturedIds);
   const [businesses, setBusinesses] = useState(initialBusinesses);
 
@@ -30,7 +35,10 @@ export function BusinessesBoard({
     [businesses]
   );
 
-  const filtered = tab === "all" ? businesses : businesses.filter((b) => b.status === tab);
+  const filtered = businesses
+    .filter((b) => tab === "all" || b.status === tab)
+    .filter((b) => category === ALL_CATEGORIES || b.category === category);
+
   const featured = featuredIds.map((id) => businesses.find((b) => b.id === id)).filter((b): b is Business => Boolean(b));
 
   function removeFeatured(id: string) {
@@ -54,7 +62,13 @@ export function BusinessesBoard({
 
       <div className="flex flex-col gap-4">
         <BusinessTabs active={tab} onChange={setTab} counts={counts} />
-        <BusinessesToolbar />
+        <BusinessesToolbar
+          categoryOptions={[ALL_CATEGORIES, ...categoryOptions]}
+          categoryValue={category}
+          onCategoryChange={setCategory}
+          statusTab={tab}
+          onStatusChange={setTab}
+        />
         <BusinessesTable businesses={filtered} onSetStatus={setStatus} />
       </div>
     </div>

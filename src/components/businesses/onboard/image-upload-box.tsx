@@ -12,14 +12,15 @@ export function ImageUploadBox({
   label: string;
   placeholder: string;
   preview: string | null;
-  onChange: (preview: string | null) => void;
+  /** Fires with both the real File (to upload at submit time) and a local preview URL (to show now). */
+  onChange: (file: File, preview: string) => void;
 }) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleFile(file: File | undefined) {
     if (!file) return;
-    onChange(URL.createObjectURL(file));
+    onChange(file, URL.createObjectURL(file));
   }
 
   return (

@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Menu, Search, Settings } from "lucide-react";
+import { ArrowLeft, Menu, Settings } from "lucide-react";
 import { NotificationsDropdown } from "./notifications-dropdown";
+import { GlobalSearch } from "./global-search";
 import type { DropdownNotification } from "@/lib/data/notifications";
 
 export function TopBar({
@@ -43,14 +44,7 @@ export function TopBar({
       )}
 
       <div className={`flex items-center gap-2 sm:gap-3 ${title ? "" : "flex-1 justify-end"}`}>
-        <label className="hidden h-[38px] items-center gap-2 rounded-[11px] border border-[#ececed] px-[10px] md:flex md:w-[180px] lg:w-[220px]">
-          <Search size={16} className="shrink-0 text-black/60" />
-          <input
-            type="search"
-            placeholder="search anything"
-            className="h-full w-full bg-transparent text-[16px] font-medium text-black placeholder:text-black/60 focus:outline-none"
-          />
-        </label>
+        <GlobalSearch />
 
         <NotificationsDropdown notifications={notifications} />
 

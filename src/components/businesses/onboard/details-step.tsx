@@ -25,14 +25,6 @@ export function DetailsStep({
       />
 
       <FormField
-        id="email-address"
-        label="Email Address"
-        type="email"
-        placeholder="Info@gmail.com"
-        value={data.email}
-        onChange={(e) => onChange({ email: e.target.value })}
-      />
-      <FormField
         id="city-area"
         label="City/Area"
         value={data.cityArea}

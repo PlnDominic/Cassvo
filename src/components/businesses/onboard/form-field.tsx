@@ -22,7 +22,8 @@ export function FormField({ label, id, className, ...props }: FieldProps) {
 
 interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
-  options: string[];
+  /** A plain label doubles as its own value; pass {value, label} when the two need to differ (e.g. a real database id vs. its display name). */
+  options: (string | { value: string; label: string })[];
 }
 
 export function SelectField({ label, id, options, className, ...props }: SelectFieldProps) {
@@ -37,11 +38,15 @@ export function SelectField({ label, id, options, className, ...props }: SelectF
           className={`h-[52px] w-full appearance-none rounded-xl border border-[#ececed] bg-white px-4 pr-10 text-sm font-medium text-[#060606] focus:border-brand-red focus:outline-none ${className ?? ""}`}
           {...props}
         >
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
+          {options.map((option) => {
+            const value = typeof option === "string" ? option : option.value;
+            const optionLabel = typeof option === "string" ? option : option.label;
+            return (
+              <option key={value} value={value}>
+                {optionLabel}
+              </option>
+            );
+          })}
         </select>
         <ChevronDown size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#939393]" />
       </div>

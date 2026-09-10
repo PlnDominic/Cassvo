@@ -8,20 +8,29 @@ export interface VerificationDocument {
 export interface AdditionalPhoto {
   id: string;
   preview: string;
+  /** The real file, uploaded to Storage at submit time — see src/lib/upload-image.ts. */
+  file: File;
 }
 
 export interface OnboardBusinessData {
   // Step 1 — Business Info
   name: string;
+  /** categories.id (uuid) — see business-info-step.tsx's real category dropdown. */
   category: string;
   businessType: string;
   description: string;
   coverImagePreview: string | null;
+  /** The real cover file, uploaded to the business-covers bucket at submit time. */
+  coverImageFile: File | null;
+  /**
+   * Preview-only — businesses has no logo column at all (only a single
+   * cover_image), so this is never uploaded or persisted. Kept purely
+   * for the wizard's own live preview card; see business-info-step.tsx.
+   */
   logoImagePreview: string | null;
 
   // Step 2 — Details
   phone: string;
-  email: string;
   website: string;
   price: string;
   businessAddress: string;
@@ -31,6 +40,7 @@ export interface OnboardBusinessData {
   amenities: string;
 
   // Step 3 — Verification
+  /** Preview-only — no business_documents table exists on the real schema. */
   documents: VerificationDocument[];
   additionalPhotos: AdditionalPhoto[];
 }
@@ -45,9 +55,9 @@ export const EMPTY_ONBOARD_DATA: OnboardBusinessData = {
   businessType: "",
   description: "",
   coverImagePreview: null,
+  coverImageFile: null,
   logoImagePreview: null,
   phone: "",
-  email: "",
   website: "",
   price: "Premium",
   businessAddress: "",

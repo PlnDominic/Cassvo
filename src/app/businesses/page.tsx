@@ -3,15 +3,17 @@ import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { BusinessesBoard } from "@/components/businesses/businesses-board";
 import { getBusinesses, getFeaturedBusinessIds, getBusinessCounts } from "@/lib/data/businesses";
+import { getCategories } from "@/lib/data/categories";
 import { formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function BusinessesPage() {
-  const [businesses, featuredIds, counts] = await Promise.all([
+  const [businesses, featuredIds, counts, categories] = await Promise.all([
     getBusinesses(),
     getFeaturedBusinessIds(),
     getBusinessCounts(),
+    getCategories(),
   ]);
 
   return (
@@ -26,7 +28,11 @@ export default async function BusinessesPage() {
           <StatCard label="Under Review" value={formatNumber(counts.underReview)} />
         </div>
 
-        <BusinessesBoard businesses={businesses} initialFeaturedIds={featuredIds} />
+        <BusinessesBoard
+          businesses={businesses}
+          initialFeaturedIds={featuredIds}
+          categoryOptions={categories.map((c) => c.title)}
+        />
       </div>
     </DashboardShell>
   );

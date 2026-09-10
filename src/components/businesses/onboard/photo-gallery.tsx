@@ -11,7 +11,8 @@ export function PhotoGallery({
   columns = 3,
 }: {
   photos: AdditionalPhoto[];
-  onAdd?: (preview: string) => void;
+  /** Fires with both the real File (to upload at submit time) and a local preview URL (to show now). */
+  onAdd?: (file: File, preview: string) => void;
   editable?: boolean;
   columns?: 2 | 3;
 }) {
@@ -19,7 +20,7 @@ export function PhotoGallery({
 
   function handleFile(file: File | undefined) {
     if (!file || !onAdd) return;
-    onAdd(URL.createObjectURL(file));
+    onAdd(file, URL.createObjectURL(file));
   }
 
   return (

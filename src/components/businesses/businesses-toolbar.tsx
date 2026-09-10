@@ -1,16 +1,50 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { FilterDropdown } from "../reviews/filter-dropdown";
+import type { BusinessTab } from "./business-tabs";
 
-export function BusinessesToolbar() {
+const STATUS_OPTIONS: { label: string; tab: BusinessTab }[] = [
+  { label: "All Status", tab: "all" },
+  { label: "Pending", tab: "pending" },
+  { label: "Confirmed", tab: "confirmed" },
+  { label: "Suspended", tab: "suspended" },
+];
+
+export function BusinessesToolbar({
+  categoryOptions,
+  categoryValue,
+  onCategoryChange,
+  statusTab,
+  onStatusChange,
+}: {
+  /** Real category titles — see getCategories(); "All Categories" is prepended by the caller. */
+  categoryOptions: string[];
+  categoryValue: string;
+  onCategoryChange: (value: string) => void;
+  /** Mirrors BusinessTabs' own active tab — this dropdown is a second control over the same state, kept in sync with it. */
+  statusTab: BusinessTab;
+  onStatusChange: (tab: BusinessTab) => void;
+}) {
+  const statusLabel = STATUS_OPTIONS.find((s) => s.tab === statusTab)?.label ?? "All Status";
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-3">
         <FilterDropdown
-          options={["All Categories", "Food & Dining", "Beauty & Fashion", "Event Vendors", "Online Shops", "NightLife", "Others"]}
-          defaultValue="All Categories"
+          key={categoryValue}
+          options={categoryOptions}
+          defaultValue={categoryValue}
+          onChange={onCategoryChange}
         />
-        <FilterDropdown options={["All Status", "Pending", "Confirmed", "Suspended"]} defaultValue="All Status" />
+        <FilterDropdown
+          key={statusTab}
+          options={STATUS_OPTIONS.map((s) => s.label)}
+          defaultValue={statusLabel}
+          onChange={(label) => {
+            const match = STATUS_OPTIONS.find((s) => s.label === label);
+            if (match) onStatusChange(match.tab);
+          }}
+        />
       </div>
 
       <div className="flex items-center gap-3">

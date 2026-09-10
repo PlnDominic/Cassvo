@@ -1,12 +1,16 @@
-import { FormField, TextareaField } from "./form-field";
+import { FormField, SelectField, TextareaField } from "./form-field";
 import { ImageUploadBox } from "./image-upload-box";
 import type { OnboardBusinessData } from "./types";
+import type { CategoryOption } from "@/lib/data/categories";
 
 export function BusinessInfoStep({
   data,
+  categories,
   onChange,
 }: {
   data: OnboardBusinessData;
+  /** Real categories.id/title rows — replaces what used to be a free-text field (see supabase real-schema check, businesses.category_id is a foreign key). */
+  categories: CategoryOption[];
   onChange: (patch: Partial<OnboardBusinessData>) => void;
 }) {
   return (
@@ -19,12 +23,15 @@ export function BusinessInfoStep({
           value={data.name}
           onChange={(e) => onChange({ name: e.target.value })}
         />
-        <FormField
+        <SelectField
           id="business-category"
           label="Category"
-          placeholder="Food & Dining"
           value={data.category}
           onChange={(e) => onChange({ category: e.target.value })}
+          options={[
+            { value: "", label: categories.length === 0 ? "No categories found" : "Select a category" },
+            ...categories.map((c) => ({ value: c.id, label: c.title })),
+          ]}
         />
         <FormField
           id="business-type"
@@ -47,13 +54,16 @@ export function BusinessInfoStep({
           label="Cover Image ( Image Banner )"
           placeholder={data.name || "Cover image preview"}
           preview={data.coverImagePreview}
-          onChange={(preview) => onChange({ coverImagePreview: preview })}
+          onChange={(file, preview) => onChange({ coverImageFile: file, coverImagePreview: preview })}
         />
         <ImageUploadBox
-          label="Business Logo (Optional )"
+          label="Business Logo (Optional — preview only, not saved yet)"
           placeholder={data.name || "Logo preview"}
           preview={data.logoImagePreview}
-          onChange={(preview) => onChange({ logoImagePreview: preview })}
+          // businesses has no logo column (only cover_image) — this never
+          // gets uploaded or persisted, only shown in this wizard's own
+          // preview card. See createBusiness()'s own comment for why.
+          onChange={(_file, preview) => onChange({ logoImagePreview: preview })}
         />
       </div>
     </div>
