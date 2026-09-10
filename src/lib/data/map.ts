@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { one } from "./util";
 import { matchNeighborhood } from "@/lib/geo/ghana-neighborhoods";
+import { resolvePeriodWindow, type GrowthPeriod } from "./dashboard";
 
 export interface MapBusiness {
   id: string;
@@ -86,4 +87,48 @@ export async function getBusinessMapMarkers(): Promise<BusinessMapMarker[]> {
       businesses: e.businesses.sort((a, b) => b.reviewCount - a.reviewCount).slice(0, 8),
     }))
     .sort((a, b) => b.businessCount - a.businessCount);
+}
+
+export interface AreaReviewCount {
+  name: string;
+  reviewCount: number;
+}
+
+/**
+ * Reviews actually posted within `period`, grouped onto the same
+ * neighborhood clusters as getBusinessMapMarkers() — backs the Reviews
+ * in Ghana dashboard card's side list. Deliberately separate from
+ * getBusinessMapMarkers(): the map pins represent where businesses
+ * *are* (not time-bound — a business's location doesn't change by
+ * period), but this list is genuinely "reviews this week/month/etc.",
+ * so it has to query `reviews` directly rather than reuse the
+ * denormalized reviews_count on businesses (same reasoning as
+ * dashboard.ts's getRegionStats/getCategoryPerformance period variants).
+ */
+export async function getReviewsByArea(period: GrowthPeriod): Promise<AreaReviewCount[]> {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { since } = await resolvePeriodWindow(supabase, "reviews", period);
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("business:businesses!business_id (location)")
+    .gte("created_at", since.toISOString());
+
+  if (error) {
+    console.error("getReviewsByArea:", error.message);
+    return [];
+  }
+
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) {
+    const business = one<{ location: string | null }>(row.business);
+    const location = business?.location?.trim();
+    if (!location) continue;
+    const area = matchNeighborhood(location);
+    counts.set(area.name, (counts.get(area.name) ?? 0) + 1);
+  }
+
+  return [...counts.entries()].map(([name, reviewCount]) => ({ name, reviewCount })).sort((a, b) => b.reviewCount - a.reviewCount);
 }

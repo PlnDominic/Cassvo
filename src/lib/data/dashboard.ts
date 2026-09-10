@@ -108,8 +108,9 @@ export async function getRecentActivity(limit = 5): Promise<ActivityEntry[]> {
   });
 }
 
-/** Review counts grouped by business category, for the category-performance card. */
-export async function getCategoryPerformance() {
+export type GrowthPeriod = "This Week" | "This Month" | "This Year" | "All Time";
+
+async function getCategoryPerformanceAllTime() {
   const supabase = await createClient();
   if (!supabase) return [];
 
@@ -134,6 +135,43 @@ export async function getCategoryPerformance() {
     byCategory.set(name, entry);
   }
 
+  return finishCategoryPerformance(byCategory);
+}
+
+/** Same "denormalized totals don't have a date on them" problem as getRegionStats — see getLocationStatsForPeriod's own comment. Queries reviews directly, joined to each business's category. */
+async function getCategoryPerformanceForPeriod(period: GrowthPeriod) {
+  const supabase = await createClient();
+  if (!supabase) return [];
+
+  const { since } = await resolvePeriodWindow(supabase, "reviews", period);
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("rating, business:businesses!business_id (category:categories(title))")
+    .gte("created_at", since.toISOString());
+
+  if (error) {
+    console.error("getCategoryPerformanceForPeriod:", error.message);
+    return [];
+  }
+
+  const byCategory = new Map<string, { reviews: number; ratingSum: number; rated: number }>();
+  for (const row of data ?? []) {
+    const business = one<{ category: { title: string } | { title: string }[] | null }>(row.business);
+    const name = (business ? one<{ title: string }>(business.category)?.title : null) ?? "Uncategorized";
+    const entry = byCategory.get(name) ?? { reviews: 0, ratingSum: 0, rated: 0 };
+    entry.reviews += 1;
+    if (row.rating != null && row.rating > 0) {
+      entry.ratingSum += row.rating;
+      entry.rated += 1;
+    }
+    byCategory.set(name, entry);
+  }
+
+  return finishCategoryPerformance(byCategory);
+}
+
+function finishCategoryPerformance(byCategory: Map<string, { reviews: number; ratingSum: number; rated: number }>) {
   const max = Math.max(1, ...[...byCategory.values()].map((e) => e.reviews));
 
   return [...byCategory.entries()]
@@ -146,7 +184,16 @@ export async function getCategoryPerformance() {
     .sort((a, b) => b.reviews - a.reviews);
 }
 
-export type GrowthPeriod = "This Week" | "This Month" | "This Year" | "All Time";
+/**
+ * Review counts grouped by business category, for the category-performance
+ * card. "All Time" (the default) uses the fast, already-denormalized
+ * businesses.reviews_count/rating columns; any other period re-derives
+ * real numbers from reviews itself, same reasoning as getRegionStats().
+ */
+export async function getCategoryPerformance(period: GrowthPeriod = "All Time") {
+  if (period === "All Time") return getCategoryPerformanceAllTime();
+  return getCategoryPerformanceForPeriod(period);
+}
 
 /**
  * Turns a Period dropdown selection into an actual query window + bucket
@@ -158,7 +205,7 @@ export type GrowthPeriod = "This Week" | "This Month" | "This Year" | "All Time"
  * given table (not a guessed constant) — capped at 60 months as a
  * sanity bound, not because the platform is actually that old.
  */
-async function resolvePeriodWindow(
+export async function resolvePeriodWindow(
   supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
   table: "reviews" | "profiles",
   period: GrowthPeriod,

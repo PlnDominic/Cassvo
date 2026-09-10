@@ -17,13 +17,19 @@ import {
   getCategoryPerformance,
   getTrustScore,
 } from "@/lib/data/dashboard";
-import { getBusinessMapMarkers } from "@/lib/data/map";
+import { getBusinessMapMarkers, getReviewsByArea } from "@/lib/data/map";
 import { formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
+// Matches CategoryPerformanceCard/ReviewsMapCard's own INITIAL_PERIOD —
+// their dropdown starts on "This Week", so the server-rendered initial
+// data has to match or the first paint would silently disagree with
+// what the dropdown claims is selected.
+const INITIAL_PERIOD = "This Week" as const;
+
 export default async function DashboardPage() {
-  const [admin, reviews, users, businesses, trending, mostViewed, activity, categories, mapMarkers, trustScore] =
+  const [admin, reviews, users, businesses, trending, mostViewed, activity, categories, mapMarkers, areaCounts, trustScore] =
     await Promise.all([
       getCurrentAdmin(),
       getReviewCounts(),
@@ -32,8 +38,9 @@ export default async function DashboardPage() {
       getTrendingBusinesses(),
       getMostViewedBusiness(),
       getRecentActivity(),
-      getCategoryPerformance(),
+      getCategoryPerformance(INITIAL_PERIOD),
       getBusinessMapMarkers(),
+      getReviewsByArea(INITIAL_PERIOD),
       getTrustScore(),
     ]);
 
@@ -68,8 +75,8 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
           <TrendingBusinessesCard businesses={trending} />
-          <ReviewsMapCard markers={mapMarkers} />
-          <CategoryPerformanceCard categories={categories} />
+          <ReviewsMapCard markers={mapMarkers} initialAreaCounts={areaCounts} />
+          <CategoryPerformanceCard initialCategories={categories} />
         </div>
 
         <RecentActivity activity={activity} />

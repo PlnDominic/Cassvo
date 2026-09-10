@@ -1,11 +1,43 @@
+"use client";
+
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
-import { PeriodDropdown } from "./period-dropdown";
+import { PeriodDropdown, type Period } from "./period-dropdown";
 import { InteractiveGhanaMapLoader } from "../analytics/interactive-ghana-map-loader";
-import type { BusinessMapMarker } from "@/lib/data/map";
+import { fetchReviewsByArea } from "@/lib/actions/dashboard";
+import type { BusinessMapMarker, AreaReviewCount } from "@/lib/data/map";
 
-export function ReviewsMapCard({ markers }: { markers: BusinessMapMarker[] }) {
-  const top = markers.slice(0, 5);
+const INITIAL_PERIOD: Period = "This Week";
+
+/**
+ * Had a <PeriodDropdown /> with no onChange at all — same root bug as
+ * Analytics/Review Map Analysis/Category Performance. The map pins
+ * (`markers`) stay static: they show where businesses *are*, which
+ * isn't time-bound. Only the side list — actual review counts per
+ * area — reacts to the period, via its own independent state (not a
+ * shared ?period= URL param, since Category Performance has its own
+ * separate dropdown on the same /dashboard page).
+ */
+export function ReviewsMapCard({
+  markers,
+  initialAreaCounts,
+}: {
+  markers: BusinessMapMarker[];
+  initialAreaCounts: AreaReviewCount[];
+}) {
+  const [period, setPeriod] = useState<Period>(INITIAL_PERIOD);
+  const [areaCounts, setAreaCounts] = useState(initialAreaCounts);
+  const [pending, startTransition] = useTransition();
+
+  function handlePeriodChange(next: Period) {
+    setPeriod(next);
+    startTransition(async () => {
+      setAreaCounts(await fetchReviewsByArea(next));
+    });
+  }
+
+  const top = areaCounts.slice(0, 5);
 
   return (
     <div className="w-full rounded-[10px] bg-white p-5 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.08)]">
@@ -14,14 +46,16 @@ export function ReviewsMapCard({ markers }: { markers: BusinessMapMarker[] }) {
           <span>Reviews in Ghana</span>
           <ChevronDown size={14} />
         </div>
-        <PeriodDropdown />
+        <PeriodDropdown value={period} onChange={handlePeriodChange} />
       </div>
       <div className="flex items-center gap-6">
         <div className="h-[180px] flex-1">
           <InteractiveGhanaMapLoader markers={markers} height={180} />
         </div>
         <div className="flex shrink-0 flex-col gap-2">
-          {top.length === 0 ? (
+          {pending ? (
+            <span className="text-xs text-[#939393]">Loading…</span>
+          ) : top.length === 0 ? (
             <span className="text-xs text-[#939393]">No reviews yet</span>
           ) : (
             top.map((area) => (
@@ -33,7 +67,7 @@ export function ReviewsMapCard({ markers }: { markers: BusinessMapMarker[] }) {
                   <span className="size-[11px] shrink-0 rounded-full bg-brand-red" />
                   <span>{area.name}</span>
                 </div>
-                <span>{area.businessCount}</span>
+                <span>{area.reviewCount}</span>
               </div>
             ))
           )}
