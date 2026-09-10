@@ -5,7 +5,7 @@ import { AnalyticsToolbar } from "@/components/analytics/analytics-toolbar";
 import { AnalyticsLineChart } from "@/components/analytics/analytics-line-chart";
 import { TopBusinessesCard, type TopBusiness } from "@/components/analytics/top-businesses-card";
 import { CategoryPerformanceBars } from "@/components/analytics/category-performance-bars";
-import { PERIODS, type Period } from "@/components/dashboard/period-dropdown";
+import { PERIODS, type Period } from "@/lib/period";
 import { getUserCounts } from "@/lib/data/users";
 import { getBusinessCounts } from "@/lib/data/businesses";
 import { getReviewCounts } from "@/lib/data/reviews";

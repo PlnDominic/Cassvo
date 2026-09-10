@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { PERIODS, type Period } from "@/lib/period";
 
-export const PERIODS = ["This Week", "This Month", "This Year", "All Time"] as const;
-export type Period = (typeof PERIODS)[number];
+export { PERIODS, type Period };
 
 export function PeriodDropdown({
   value,

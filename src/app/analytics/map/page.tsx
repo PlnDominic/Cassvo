@@ -9,7 +9,7 @@ import { DownloadReportButton } from "@/components/analytics/download-report-but
 import { getBusinessCounts } from "@/lib/data/businesses";
 import { getRegionStats, type GrowthPeriod } from "@/lib/data/dashboard";
 import { getBusinessMapMarkers } from "@/lib/data/map";
-import { PERIODS, type Period } from "@/components/dashboard/period-dropdown";
+import { PERIODS, type Period } from "@/lib/period";
 import { formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
