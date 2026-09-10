@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Pencil } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
-import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
+import { WelcomeBanner } from "@/components/business-profile/welcome-banner";
 import { InfoBar } from "@/components/business-profile/info-bar";
 import { BusinessHero } from "@/components/business-profile/business-hero";
 import { ProfileTabs } from "@/components/business-profile/profile-tabs";
@@ -10,13 +12,14 @@ import { BusinessInfoTab } from "@/components/business-profile/business-info-tab
 import { ReportsTab } from "@/components/business-profile/reports-tab";
 import { getBusiness } from "@/lib/data/businesses";
 import { getBusinessReports } from "@/lib/data/reports";
+import { getCurrentAdmin } from "@/lib/data/admins";
 import { formatDate, formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function BusinessProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const business = await getBusiness(id);
+  const [business, admin] = await Promise.all([getBusiness(id), getCurrentAdmin()]);
   if (!business) notFound();
 
   const reports = await getBusinessReports(id);
@@ -26,7 +29,24 @@ export default async function BusinessProfilePage({ params }: { params: Promise<
   return (
     <DashboardShell title="Business Profile" backHref="/businesses">
       <div className="flex flex-col gap-6">
-        <AdminWelcomeBanner subtitle="Everything about a registered business" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1">
+            <WelcomeBanner
+              name={admin?.name ?? ""}
+              initial={admin?.name?.trim().charAt(0).toUpperCase() ?? "?"}
+              subtitle="Everything about a registered business"
+            />
+          </div>
+          {admin?.role === "Admin" && (
+            <Link
+              href={`/businesses/${id}/edit`}
+              className="flex shrink-0 items-center gap-2 self-start rounded-xl bg-brand-red px-5 py-2.5 text-sm font-medium text-white sm:self-auto"
+            >
+              <Pencil size={16} />
+              Edit Business
+            </Link>
+          )}
+        </div>
 
         <InfoBar
           items={[

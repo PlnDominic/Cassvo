@@ -68,6 +68,8 @@ export interface BusinessDetail {
   id: string;
   name: string;
   category: string;
+  /** categories.id — null when the business has no category set. Needed to pre-select the real dropdown when editing (see /businesses/[id]/edit). */
+  categoryId: string | null;
   businessType: string | null;
   description: string | null;
   status: BusinessStatus;
@@ -79,6 +81,9 @@ export interface BusinessDetail {
   website: string | null;
   operatingHours: string | null;
   priceLevel: number | null;
+  /** businesses.price_range — free text (confirmed against the real schema; not the same as priceLevel, which nothing sets). */
+  priceRange: string | null;
+  waitTime: string | null;
   amenities: string[];
   legalName: string | null;
   registrationNumber: string | null;
@@ -101,7 +106,7 @@ export async function getBusiness(id: string): Promise<BusinessDetail | null> {
     .select(
       `id, name, about, is_verified, address, location, phone, website, working_hours,
        amenities, images, cover_image, is_featured, rating, reviews_count,
-       category:categories(title)`
+       price_range, wait_time, category_id, category:categories(title)`
     )
     .eq("id", id)
     .maybeSingle();
@@ -115,6 +120,7 @@ export async function getBusiness(id: string): Promise<BusinessDetail | null> {
     id: data.id,
     name: data.name,
     category: one<{ title: string }>(data.category)?.title ?? "Uncategorized",
+    categoryId: data.category_id,
     // Not present on the real schema — the app doesn't distinguish a
     // "business type" separate from category.
     businessType: null,
@@ -130,8 +136,11 @@ export async function getBusiness(id: string): Promise<BusinessDetail | null> {
     email: null,
     website: data.website,
     operatingHours: data.working_hours,
-    // `price_range`'s real shape is unconfirmed and unused by the UI today.
+    // Nothing sets this numeric level — price_range (below) is the real,
+    // free-text column the app actually reads/writes.
     priceLevel: null,
+    priceRange: data.price_range,
+    waitTime: data.wait_time,
     amenities: data.amenities ?? [],
     // Legal/registration fields don't exist on the real schema.
     legalName: null,

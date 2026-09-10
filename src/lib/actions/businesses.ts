@@ -126,3 +126,90 @@ export async function createBusiness(input: CreateBusinessInput): Promise<Create
   revalidatePath("/businesses");
   return { ok: true, message: "Business created", id: data.id };
 }
+
+export interface EditBusinessInput {
+  name: string;
+  categoryId: string;
+  description: string;
+  phone: string;
+  website: string;
+  priceRange: string;
+  waitTime: string;
+  cityArea: string;
+  operatingHours: string;
+  amenities: string;
+  businessAddress: string;
+  coverImageUrl: string | null;
+  imageUrls: string[];
+}
+
+/**
+ * Updates an existing `businesses` row — same field set and the same
+ * "no email/logo/documents column" gaps as createBusiness() (see its
+ * own comment for why those three are dropped rather than mismapped).
+ * Unlike createBusiness(), is_verified is left untouched: editing
+ * details shouldn't silently flip a business's confirmed/pending
+ * status one way or the other — that's Approve/Suspend's job
+ * (businesses-table.tsx), not this form's.
+ *
+ * Same access posture as createBusiness(): businesses has no UPDATE
+ * policy either (RLS here is read-only), so this goes through the
+ * service-role client; admin-only in application code on top of that.
+ */
+export async function updateBusiness(id: string, input: EditBusinessInput): Promise<ActionResult> {
+  const name = input.name.trim();
+  const cityArea = input.cityArea.trim();
+  if (!name) return { ok: false, message: "Business name is required." };
+  if (!cityArea) return { ok: false, message: "City/Area is required." };
+
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONFIGURED;
+
+  const caller = await getCallerAdmin(supabase);
+  if (!caller) return { ok: false, message: "You don't have admin access." };
+  if (caller.role !== "admin") return NOT_ADMIN_ROLE;
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { ok: false, message: "Editing isn't configured yet — SUPABASE_SERVICE_ROLE_KEY is missing on the server." };
+  }
+
+  const amenities = input.amenities
+    .split(/[,\n]/)
+    .map((a) => a.trim())
+    .filter(Boolean);
+
+  const { error, count } = await adminClient
+    .from("businesses")
+    .update(
+      {
+        name,
+        location: cityArea,
+        address: input.businessAddress.trim() || null,
+        phone: input.phone.trim() || null,
+        website: input.website.trim() || null,
+        about: input.description.trim() || null,
+        category_id: input.categoryId || null,
+        price_range: input.priceRange || null,
+        wait_time: input.waitTime.trim() || null,
+        working_hours: input.operatingHours.trim() || null,
+        amenities,
+        cover_image: input.coverImageUrl,
+        images: input.imageUrls,
+      },
+      { count: "exact" },
+    )
+    .eq("id", id);
+
+  if (error) {
+    console.error("updateBusiness:", error.message);
+    return { ok: false, message: error.message };
+  }
+  if (count === 0) {
+    return { ok: false, message: "Nothing changed — this business may not exist." };
+  }
+
+  revalidatePath("/businesses");
+  revalidatePath(`/businesses/${id}`);
+  return { ok: true, message: "Changes saved" };
+}
