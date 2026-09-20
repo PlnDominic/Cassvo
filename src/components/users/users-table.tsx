@@ -4,7 +4,15 @@ import { UserStatusBadge } from "./user-status-badge";
 import { RowActionsMenu } from "../ui/row-actions-menu";
 import type { UserRow } from "./types";
 
-export function UsersTable({ users, onSuspend }: { users: UserRow[]; onSuspend: (id: string) => void }) {
+export function UsersTable({
+  users,
+  onSuspend,
+  onDelete,
+}: {
+  users: UserRow[];
+  onSuspend: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
   return (
     <div className="overflow-x-auto rounded-2xl bg-white shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
       <table className="w-full min-w-[820px] text-sm">
@@ -45,6 +53,15 @@ export function UsersTable({ users, onSuspend }: { users: UserRow[]; onSuspend: 
                     { label: "View profile", href: `/users/${user.id}` },
                     { label: "View reports", href: "/reports" },
                     { label: "Suspend user", danger: true, onSelect: () => onSuspend(user.id) },
+                    {
+                      label: "Delete user",
+                      danger: true,
+                      onSelect: () => {
+                        if (window.confirm(`Delete ${user.name}? This permanently removes their account and cannot be undone.`)) {
+                          onDelete(user.id);
+                        }
+                      },
+                    },
                   ]}
                 />
               </td>
