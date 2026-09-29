@@ -213,3 +213,78 @@ export async function updateBusiness(id: string, input: EditBusinessInput): Prom
   revalidatePath(`/businesses/${id}`);
   return { ok: true, message: "Changes saved" };
 }
+
+export interface BatchCoverUpdate {
+  businessId: string;
+  /** Already-uploaded public URL — see src/lib/upload-image.ts, called client-side before this action runs, same as create/edit. */
+  coverImageUrl: string;
+}
+
+export interface BatchCoverResult {
+  businessId: string;
+  ok: boolean;
+  message: string;
+}
+
+/**
+ * Batch Upload Photos (Businesses → toolbar): sets just cover_image for
+ * a set of businesses in one call, matched client-side by filename ↔
+ * business name (see batch-upload-board.tsx) — the feature requested in
+ * the team's own thread ("could add a feature... to batch select
+ * businesses for picture uploads... rename the image files to match a
+ * unique Business ID or code... backend reads the filename, queries for
+ * the matching business, and automatically attaches the image").
+ *
+ * There's no business "code" column on the real schema, so matching is
+ * by business name (normalized) instead — done in the UI layer, not
+ * here; this action only ever receives already-resolved
+ * {businessId, coverImageUrl} pairs, the same shape a single edit's
+ * cover-image save already produces. Same access posture as
+ * createBusiness()/updateBusiness(): admin-only, service-role client
+ * (businesses has no UPDATE policy for a regular session).
+ *
+ * One row at a time rather than a single bulk query — Supabase doesn't
+ * support a single UPDATE with a different value per row, and a
+ * partial failure (one bad id among fifty) should still save the other
+ * forty-nine rather than roll the whole batch back.
+ */
+export async function batchSetBusinessCovers(updates: BatchCoverUpdate[]): Promise<BatchCoverResult[]> {
+  const supabase = await createClient();
+  if (!supabase) {
+    return updates.map((u) => ({ businessId: u.businessId, ok: false, message: NOT_CONFIGURED.message }));
+  }
+
+  const caller = await getCallerAdmin(supabase);
+  if (!caller) {
+    return updates.map((u) => ({ businessId: u.businessId, ok: false, message: "You don't have admin access." }));
+  }
+  if (caller.role !== "admin") {
+    return updates.map((u) => ({ businessId: u.businessId, ok: false, message: NOT_ADMIN_ROLE_MESSAGE }));
+  }
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    const message = "Batch upload isn't configured yet — SUPABASE_SERVICE_ROLE_KEY is missing on the server.";
+    return updates.map((u) => ({ businessId: u.businessId, ok: false, message }));
+  }
+
+  const results: BatchCoverResult[] = [];
+  for (const update of updates) {
+    const { error, count } = await adminClient
+      .from("businesses")
+      .update({ cover_image: update.coverImageUrl }, { count: "exact" })
+      .eq("id", update.businessId);
+
+    if (error) {
+      console.error("batchSetBusinessCovers:", update.businessId, error.message);
+      results.push({ businessId: update.businessId, ok: false, message: error.message });
+    } else if (count === 0) {
+      results.push({ businessId: update.businessId, ok: false, message: "Business not found" });
+    } else {
+      results.push({ businessId: update.businessId, ok: true, message: "Saved" });
+    }
+  }
+
+  revalidatePath("/businesses");
+  return results;
+}

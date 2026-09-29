@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { ImagePlus, Plus } from "lucide-react";
 import { FilterDropdown } from "../reviews/filter-dropdown";
 import type { BusinessTab } from "./business-tabs";
 
@@ -16,6 +16,7 @@ export function BusinessesToolbar({
   onCategoryChange,
   statusTab,
   onStatusChange,
+  viewerIsAdmin,
 }: {
   /** Real category titles — see getCategories(); "All Categories" is prepended by the caller. */
   categoryOptions: string[];
@@ -24,6 +25,8 @@ export function BusinessesToolbar({
   /** Mirrors BusinessTabs' own active tab — this dropdown is a second control over the same state, kept in sync with it. */
   statusTab: BusinessTab;
   onStatusChange: (tab: BusinessTab) => void;
+  /** Batch Upload lands on an admin-only page (batchSetBusinessCovers is admin-only) — hidden here for a moderator instead of showing a link that just redirects them back. */
+  viewerIsAdmin: boolean;
 }) {
   const statusLabel = STATUS_OPTIONS.find((s) => s.tab === statusTab)?.label ?? "All Status";
 
@@ -54,6 +57,15 @@ export function BusinessesToolbar({
         >
           Drafts
         </Link>
+        {viewerIsAdmin && (
+          <Link
+            href="/businesses/batch-upload"
+            className="flex items-center gap-2 rounded-xl bg-[#f2f2f3] px-5 py-2.5 text-sm font-medium text-[#606060] hover:bg-[#ececed]"
+          >
+            <ImagePlus size={16} />
+            Batch Upload
+          </Link>
+        )}
         <Link
           href="/businesses/new"
           className="flex items-center gap-2 rounded-xl bg-brand-red px-5 py-2.5 text-sm font-medium text-white"

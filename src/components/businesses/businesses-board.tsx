@@ -14,11 +14,14 @@ export function BusinessesBoard({
   businesses: initialBusinesses,
   initialFeaturedIds,
   categoryOptions,
+  viewerIsAdmin,
 }: {
   businesses: Business[];
   initialFeaturedIds: string[];
   /** Real category titles — see getCategories(); this page doesn't need "Uncategorized" as a filterable option since it's a fallback label, not a real category. */
   categoryOptions: string[];
+  /** Passed through to BusinessesToolbar to gate the Batch Upload link. */
+  viewerIsAdmin: boolean;
 }) {
   const [tab, setTab] = useState<BusinessTab>("all");
   const [category, setCategory] = useState(ALL_CATEGORIES);
@@ -68,6 +71,7 @@ export function BusinessesBoard({
           onCategoryChange={setCategory}
           statusTab={tab}
           onStatusChange={setTab}
+          viewerIsAdmin={viewerIsAdmin}
         />
         <BusinessesTable businesses={filtered} onSetStatus={setStatus} />
       </div>
