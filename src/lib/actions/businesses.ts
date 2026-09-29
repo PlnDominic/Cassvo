@@ -8,7 +8,7 @@ import type { ActionResult } from "./settings";
 
 const NOT_CONFIGURED: ActionResult = {
   ok: false,
-  message: "Supabase is not configured yet — changes cannot be saved.",
+  message: "Supabase is not configured yet - changes cannot be saved.",
 };
 
 const NOT_ADMIN_ROLE: ActionResult = { ok: false, message: NOT_ADMIN_ROLE_MESSAGE };
@@ -21,7 +21,7 @@ export interface CreateBusinessInput {
   website: string;
   priceRange: string;
   waitTime: string;
-  /** Required on the real table (businesses.location is NOT NULL) — the wizard's City/Area field. */
+  /** Required on the real table (businesses.location is NOT NULL) - the wizard's City/Area field. */
   cityArea: string;
   operatingHours: string;
   /** Free text from the wizard; split into businesses.amenities (text[]). */
@@ -38,34 +38,34 @@ export interface CreateBusinessResult extends ActionResult {
 }
 
 /**
- * Creates a real row in `businesses` — this is the fix for the Add
+ * Creates a real row in `businesses` - this is the fix for the Add
  * Business wizard never having called any backend at all (onboard-
  * business-wizard.tsx previously just flipped local state to show a
  * fake "Business onboarded" screen).
  *
  * "Save as Draft" and "Confirm & Onboard" both call this and produce
  * the exact same row: the real schema has no draft concept whatsoever
- * (no is_draft/draft_progress/draft_state columns — see
+ * (no is_draft/draft_progress/draft_state columns - see
  * src/lib/data/businesses.ts's getBusinessDrafts(), which returns []
  * for exactly this reason), so there is no real distinct "draft" state
  * to save into. Both set is_verified = true: an admin manually running
  * this wizard has already reviewed what they're entering, unlike a
  * business self-registering through the mobile app.
  *
- * businesses has no INSERT policy at all (RLS here is read-only —
+ * businesses has no INSERT policy at all (RLS here is read-only  - 
  * "Businesses are viewable by everyone" / "anyone can read businesses",
  * both SELECT), so this goes through the service-role client, same
  * reasoning as every other table in this app with no write policy for
  * a regular session (notifications, admin_users, login_attempts).
  * Admin-only in application code on top of that, same posture as every
  * other administrative action in this dashboard (security finding #1)
- * — RLS alone can't distinguish a moderator from an admin here either.
+ * - RLS alone can't distinguish a moderator from an admin here either.
  *
  * Two real columns the wizard collects have nowhere to go and are
  * deliberately dropped rather than silently mismapped: `email` (no
- * email column on businesses — same gap src/lib/data/businesses.ts
+ * email column on businesses - same gap src/lib/data/businesses.ts
  * already documents on the read side) and the Business Logo upload (no
- * logo column at all — only a single cover_image). Verification
+ * logo column at all - only a single cover_image). Verification
  * documents are dropped too: there's no business_documents table on
  * the real schema.
  */
@@ -84,7 +84,7 @@ export async function createBusiness(input: CreateBusinessInput): Promise<Create
 
   const adminClient = createAdminClient();
   if (!adminClient) {
-    return { ok: false, message: "Business creation isn't configured yet — SUPABASE_SERVICE_ROLE_KEY is missing on the server." };
+    return { ok: false, message: "Business creation isn't configured yet - SUPABASE_SERVICE_ROLE_KEY is missing on the server." };
   }
 
   const {
@@ -144,12 +144,12 @@ export interface EditBusinessInput {
 }
 
 /**
- * Updates an existing `businesses` row — same field set and the same
+ * Updates an existing `businesses` row - same field set and the same
  * "no email/logo/documents column" gaps as createBusiness() (see its
  * own comment for why those three are dropped rather than mismapped).
  * Unlike createBusiness(), is_verified is left untouched: editing
  * details shouldn't silently flip a business's confirmed/pending
- * status one way or the other — that's Approve/Suspend's job
+ * status one way or the other - that's Approve/Suspend's job
  * (businesses-table.tsx), not this form's.
  *
  * Same access posture as createBusiness(): businesses has no UPDATE
@@ -171,7 +171,7 @@ export async function updateBusiness(id: string, input: EditBusinessInput): Prom
 
   const adminClient = createAdminClient();
   if (!adminClient) {
-    return { ok: false, message: "Editing isn't configured yet — SUPABASE_SERVICE_ROLE_KEY is missing on the server." };
+    return { ok: false, message: "Editing isn't configured yet - SUPABASE_SERVICE_ROLE_KEY is missing on the server." };
   }
 
   const amenities = input.amenities
@@ -206,7 +206,7 @@ export async function updateBusiness(id: string, input: EditBusinessInput): Prom
     return { ok: false, message: error.message };
   }
   if (count === 0) {
-    return { ok: false, message: "Nothing changed — this business may not exist." };
+    return { ok: false, message: "Nothing changed - this business may not exist." };
   }
 
   revalidatePath("/businesses");
@@ -216,7 +216,7 @@ export async function updateBusiness(id: string, input: EditBusinessInput): Prom
 
 export interface BatchCoverUpdate {
   businessId: string;
-  /** Already-uploaded public URL — see src/lib/upload-image.ts, called client-side before this action runs, same as create/edit. */
+  /** Already-uploaded public URL - see src/lib/upload-image.ts, called client-side before this action runs, same as create/edit. */
   coverImageUrl: string;
 }
 
@@ -229,21 +229,21 @@ export interface BatchCoverResult {
 /**
  * Batch Upload Photos (Businesses → toolbar): sets just cover_image for
  * a set of businesses in one call, matched client-side by filename ↔
- * business name (see batch-upload-board.tsx) — the feature requested in
+ * business name (see batch-upload-board.tsx) - the feature requested in
  * the team's own thread ("could add a feature... to batch select
  * businesses for picture uploads... rename the image files to match a
  * unique Business ID or code... backend reads the filename, queries for
  * the matching business, and automatically attaches the image").
  *
  * There's no business "code" column on the real schema, so matching is
- * by business name (normalized) instead — done in the UI layer, not
+ * by business name (normalized) instead - done in the UI layer, not
  * here; this action only ever receives already-resolved
  * {businessId, coverImageUrl} pairs, the same shape a single edit's
  * cover-image save already produces. Same access posture as
  * createBusiness()/updateBusiness(): admin-only, service-role client
  * (businesses has no UPDATE policy for a regular session).
  *
- * One row at a time rather than a single bulk query — Supabase doesn't
+ * One row at a time rather than a single bulk query - Supabase doesn't
  * support a single UPDATE with a different value per row, and a
  * partial failure (one bad id among fifty) should still save the other
  * forty-nine rather than roll the whole batch back.
@@ -264,7 +264,7 @@ export async function batchSetBusinessCovers(updates: BatchCoverUpdate[]): Promi
 
   const adminClient = createAdminClient();
   if (!adminClient) {
-    const message = "Batch upload isn't configured yet — SUPABASE_SERVICE_ROLE_KEY is missing on the server.";
+    const message = "Batch upload isn't configured yet - SUPABASE_SERVICE_ROLE_KEY is missing on the server.";
     return updates.map((u) => ({ businessId: u.businessId, ok: false, message }));
   }
 
@@ -291,13 +291,13 @@ export async function batchSetBusinessCovers(updates: BatchCoverUpdate[]): Promi
 
 /**
  * Permanently removes a business row. Same access posture as
- * createBusiness/updateBusiness — no DELETE policy on `businesses` either,
+ * createBusiness/updateBusiness - no DELETE policy on `businesses` either,
  * so this goes through the service-role client; admin-only on top of that.
  *
  * If `reviews.business_id` (or anything else) has a foreign key into
  * `businesses` without ON DELETE CASCADE, Postgres will reject this with
  * a constraint-violation error, which is surfaced to the caller as-is
- * rather than guessed at — this codebase doesn't have visibility into the
+ * rather than guessed at - this codebase doesn't have visibility into the
  * real schema's cascade rules.
  */
 export async function deleteBusiness(id: string): Promise<ActionResult> {
@@ -310,7 +310,7 @@ export async function deleteBusiness(id: string): Promise<ActionResult> {
 
   const adminClient = createAdminClient();
   if (!adminClient) {
-    return { ok: false, message: "Deleting isn't configured yet — SUPABASE_SERVICE_ROLE_KEY is missing on the server." };
+    return { ok: false, message: "Deleting isn't configured yet - SUPABASE_SERVICE_ROLE_KEY is missing on the server." };
   }
 
   const { error } = await adminClient.from("businesses").delete().eq("id", id);
@@ -324,7 +324,7 @@ export async function deleteBusiness(id: string): Promise<ActionResult> {
   return { ok: true, message: "Business deleted" };
 }
 
-/** Bulk version of deleteBusiness — for clearing out businesses that are no longer in service in one go. */
+/** Bulk version of deleteBusiness - for clearing out businesses that are no longer in service in one go. */
 export async function deleteBusinesses(ids: string[]): Promise<ActionResult> {
   if (ids.length === 0) return { ok: false, message: "No businesses selected." };
 
@@ -337,7 +337,7 @@ export async function deleteBusinesses(ids: string[]): Promise<ActionResult> {
 
   const adminClient = createAdminClient();
   if (!adminClient) {
-    return { ok: false, message: "Deleting isn't configured yet — SUPABASE_SERVICE_ROLE_KEY is missing on the server." };
+    return { ok: false, message: "Deleting isn't configured yet - SUPABASE_SERVICE_ROLE_KEY is missing on the server." };
   }
 
   const { error } = await adminClient.from("businesses").delete().in("id", ids);

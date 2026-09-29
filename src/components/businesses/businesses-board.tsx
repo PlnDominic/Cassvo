@@ -21,7 +21,7 @@ export function BusinessesBoard({
 }: {
   businesses: Business[];
   initialFeaturedIds: string[];
-  /** Real category titles — see getCategories(); this page doesn't need "Uncategorized" as a filterable option since it's a fallback label, not a real category. */
+  /** Real category titles - see getCategories(); this page doesn't need "Uncategorized" as a filterable option since it's a fallback label, not a real category. */
   categoryOptions: string[];
   /** Passed through to BusinessesToolbar to gate the Batch Upload link. */
   viewerIsAdmin: boolean;

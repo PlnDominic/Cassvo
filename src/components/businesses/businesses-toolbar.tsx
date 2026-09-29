@@ -18,14 +18,14 @@ export function BusinessesToolbar({
   onStatusChange,
   viewerIsAdmin,
 }: {
-  /** Real category titles — see getCategories(); "All Categories" is prepended by the caller. */
+  /** Real category titles - see getCategories(); "All Categories" is prepended by the caller. */
   categoryOptions: string[];
   categoryValue: string;
   onCategoryChange: (value: string) => void;
-  /** Mirrors BusinessTabs' own active tab — this dropdown is a second control over the same state, kept in sync with it. */
+  /** Mirrors BusinessTabs' own active tab - this dropdown is a second control over the same state, kept in sync with it. */
   statusTab: BusinessTab;
   onStatusChange: (tab: BusinessTab) => void;
-  /** Batch Upload lands on an admin-only page (batchSetBusinessCovers is admin-only) — hidden here for a moderator instead of showing a link that just redirects them back. */
+  /** Batch Upload lands on an admin-only page (batchSetBusinessCovers is admin-only) - hidden here for a moderator instead of showing a link that just redirects them back. */
   viewerIsAdmin: boolean;
 }) {
   const statusLabel = STATUS_OPTIONS.find((s) => s.tab === statusTab)?.label ?? "All Status";

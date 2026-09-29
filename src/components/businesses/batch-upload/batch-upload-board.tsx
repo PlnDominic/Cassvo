@@ -34,7 +34,7 @@ const MAX_FILES = 60;
  * businesses for picture uploads... rename the image files to match a
  * unique Business ID or code... backend reads the filename, strips the
  * extension, queries for the matching business code, and automatically
- * attaches the image" — the team's own request. Matches by business
+ * attaches the image" - the team's own request. Matches by business
  * NAME rather than a code (there's no code column on the real schema),
  * normalized so case/spacing/punctuation/accents don't matter. Sets
  * each matched business's cover image, the picture referenced as "the
@@ -119,7 +119,7 @@ export function BatchUploadBoard({ businesses }: { businesses: BusinessOption[] 
       : [];
 
     // batchSetBusinessCovers() returns results in the same order it
-    // received them, so pair by position — matching back by businessId
+    // received them, so pair by position - matching back by businessId
     // instead would collide whenever two different files happen to
     // resolve to the same business (both entries share that id).
     const resultByItemId = new Map(uploadSuccesses.map(({ item }, i) => [item.id, results[i]]));
@@ -159,7 +159,7 @@ export function BatchUploadBoard({ businesses }: { businesses: BusinessOption[] 
         <div>
           <p className="text-sm font-medium text-[#060606]">Drop up to {MAX_FILES} photos here</p>
           <p className="mt-1 text-xs text-[#939393]">
-            Name each file to match the business it belongs to — e.g. <code>Aura Street Café.jpg</code>. Spacing,
+            Name each file to match the business it belongs to - e.g. <code>Aura Street Café.jpg</code>. Spacing,
             capitalization, and punctuation don&apos;t need to match exactly.
           </p>
         </div>
@@ -187,7 +187,7 @@ export function BatchUploadBoard({ businesses }: { businesses: BusinessOption[] 
         <div className="rounded-2xl bg-white p-6 shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)] sm:p-8">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm font-medium text-[#060606]">
-              {items.length} file{items.length === 1 ? "" : "s"} — {matched.length} matched, {unmatched.length} need attention
+              {items.length} file{items.length === 1 ? "" : "s"} - {matched.length} matched, {unmatched.length} need attention
               {savedCount > 0 && `, ${savedCount} saved`}
             </p>
             <div className="flex items-center gap-3">
@@ -217,11 +217,11 @@ export function BatchUploadBoard({ businesses }: { businesses: BusinessOption[] 
                     <p className="truncate text-xs text-emerald-600">→ {item.match.business.name}</p>
                   )}
                   {item.match.kind === "unmatched" && (
-                    <p className="text-xs text-[#939393]">No matching business — rename to match its name</p>
+                    <p className="text-xs text-[#939393]">No matching business - rename to match its name</p>
                   )}
                   {item.match.kind === "ambiguous" && (
                     <p className="truncate text-xs text-amber-600">
-                      Matches {item.match.candidates.length} businesses — rename to be more specific
+                      Matches {item.match.candidates.length} businesses - rename to be more specific
                     </p>
                   )}
                 </div>
