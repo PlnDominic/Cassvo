@@ -288,3 +288,65 @@ export async function batchSetBusinessCovers(updates: BatchCoverUpdate[]): Promi
   revalidatePath("/businesses");
   return results;
 }
+
+/**
+ * Permanently removes a business row. Same access posture as
+ * createBusiness/updateBusiness — no DELETE policy on `businesses` either,
+ * so this goes through the service-role client; admin-only on top of that.
+ *
+ * If `reviews.business_id` (or anything else) has a foreign key into
+ * `businesses` without ON DELETE CASCADE, Postgres will reject this with
+ * a constraint-violation error, which is surfaced to the caller as-is
+ * rather than guessed at — this codebase doesn't have visibility into the
+ * real schema's cascade rules.
+ */
+export async function deleteBusiness(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONFIGURED;
+
+  const caller = await getCallerAdmin(supabase);
+  if (!caller) return { ok: false, message: "You don't have admin access." };
+  if (caller.role !== "admin") return NOT_ADMIN_ROLE;
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { ok: false, message: "Deleting isn't configured yet — SUPABASE_SERVICE_ROLE_KEY is missing on the server." };
+  }
+
+  const { error } = await adminClient.from("businesses").delete().eq("id", id);
+
+  if (error) {
+    console.error("deleteBusiness:", error.message);
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/businesses");
+  return { ok: true, message: "Business deleted" };
+}
+
+/** Bulk version of deleteBusiness — for clearing out businesses that are no longer in service in one go. */
+export async function deleteBusinesses(ids: string[]): Promise<ActionResult> {
+  if (ids.length === 0) return { ok: false, message: "No businesses selected." };
+
+  const supabase = await createClient();
+  if (!supabase) return NOT_CONFIGURED;
+
+  const caller = await getCallerAdmin(supabase);
+  if (!caller) return { ok: false, message: "You don't have admin access." };
+  if (caller.role !== "admin") return NOT_ADMIN_ROLE;
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return { ok: false, message: "Deleting isn't configured yet — SUPABASE_SERVICE_ROLE_KEY is missing on the server." };
+  }
+
+  const { error } = await adminClient.from("businesses").delete().in("id", ids);
+
+  if (error) {
+    console.error("deleteBusinesses:", error.message);
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/businesses");
+  return { ok: true, message: `${ids.length} business${ids.length === 1 ? "" : "es"} deleted` };
+}
