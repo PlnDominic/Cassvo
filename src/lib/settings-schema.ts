@@ -33,13 +33,6 @@ export interface NotificationSettings {
     securityAlert: boolean;
     systemUpdate: boolean;
   };
-  delivery: {
-    email: boolean;
-    sms: boolean;
-    push: boolean;
-  };
-  /** Mutually exclusive — one cadence at a time. */
-  frequency: "realtime" | "hourly" | "daily";
 }
 
 export interface SecuritySettings {
@@ -90,8 +83,6 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
       securityAlert: true,
       systemUpdate: true,
     },
-    delivery: { email: true, sms: false, push: true },
-    frequency: "realtime",
   },
   security: {
     authentication: {
@@ -131,18 +122,6 @@ export const NOTIFICATION_EVENT_LABELS: Record<keyof NotificationSettings["event
   userReportSubmitted: "User Report Submitted",
   securityAlert: "Security Alert",
   systemUpdate: "System Update",
-};
-
-export const DELIVERY_LABELS: Record<keyof NotificationSettings["delivery"], string> = {
-  email: "Email Notification",
-  sms: "SMS Notification",
-  push: "Push Notifications",
-};
-
-export const FREQUENCY_LABELS: Record<NotificationSettings["frequency"], string> = {
-  realtime: "Real-Time",
-  hourly: "Hourly Digest",
-  daily: "Daily Digest",
 };
 
 export const AUTHENTICATION_LABELS: Record<

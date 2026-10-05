@@ -40,10 +40,8 @@ import type { NotificationSettings } from "@/lib/settings-schema";
  * (platform_settings.notification.events, see settings-schema.ts) gate
  * which of these actually show up here: each synthesized event carries
  * the settings key it corresponds to, and one is dropped entirely if
- * that toggle is off. This is in-app only — the delivery-channel toggles
- * (Email/SMS/Push) and the Frequency setting have no effect here, since
- * this page is read live on every load rather than pushed to anyone;
- * there's no provider wired up to actually email/text/push these.
+ * that toggle is off. This is in-app only: nothing emails, texts or
+ * pushes these to admins.
  */
 
 type EventKey = keyof NotificationSettings["events"];
