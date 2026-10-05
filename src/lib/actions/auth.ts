@@ -3,7 +3,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRateLimitConfig } from "@/lib/auth/rate-limit";
+import { getLoginVerificationStatus, VERIFY_LOGIN_PATH } from "@/lib/auth/login-verification-status";
+import { sendLoginCode } from "@/lib/auth/login-code";
 import type { ActionResult } from "./settings";
+
+export interface LoginResult extends ActionResult {
+  /** Where to go next; the verify-code screen when Login Verification is on. */
+  next?: string;
+}
 
 const NOT_CONFIGURED: ActionResult = {
   ok: false,
@@ -37,7 +44,7 @@ const LOGIN_FAILED_MESSAGE = "Incorrect email or password, or this account doesn
  * app's reach regardless. This closes the more likely gap: brute-forcing
  * through the deployed login page itself.
  */
-export async function loginWithPassword(emailInput: string, password: string): Promise<ActionResult> {
+export async function loginWithPassword(emailInput: string, password: string): Promise<LoginResult> {
   const email = emailInput.trim().toLowerCase();
   if (!email || !password) return { ok: false, message: "Enter your email and password." };
 
@@ -95,5 +102,14 @@ export async function loginWithPassword(emailInput: string, password: string): P
   }
 
   await logAttempt(true);
-  return { ok: true, message: "Signed in" };
+
+  // Login Verification (Settings -> Security): the password was right,
+  // but this session isn't an admin until the emailed code is entered.
+  // If sending fails, the verify screen offers to send again.
+  if ((await getLoginVerificationStatus(supabase)) === "pending") {
+    const sent = await sendLoginCode(supabase);
+    return { ok: true, message: sent.message, next: VERIFY_LOGIN_PATH };
+  }
+
+  return { ok: true, message: "Signed in", next: "/dashboard" };
 }

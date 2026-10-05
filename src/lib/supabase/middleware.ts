@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured } from "./client";
+import { getLoginVerificationStatus, VERIFY_LOGIN_PATH } from "@/lib/auth/login-verification-status";
 
 const PUBLIC_PATHS = ["/", "/accept-invite"];
 
@@ -78,8 +79,29 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isAdmin && pathname === "/") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  if (isAdmin) {
+    // Login Verification (Settings -> Security). RLS enforces the same
+    // thing through is_admin(); this just sends people to the right page.
+    const verification = await getLoginVerificationStatus(supabase);
+
+    if (verification === "password_required") {
+      // Signed in by an email link alone (e.g. right after accepting an
+      // invite). Left alone on public pages so the invite flow can finish
+      // setting a password; everything else goes back to the login form.
+      if (isPublicPath(pathname)) return response;
+      const redirectUrl = new URL("/", request.url);
+      redirectUrl.searchParams.set("error", "password-required");
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    if (verification === "pending") {
+      if (pathname === VERIFY_LOGIN_PATH || pathname === "/accept-invite") return response;
+      return NextResponse.redirect(new URL(VERIFY_LOGIN_PATH, request.url));
+    }
+
+    if (pathname === "/" || pathname === VERIFY_LOGIN_PATH) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 
   return response;

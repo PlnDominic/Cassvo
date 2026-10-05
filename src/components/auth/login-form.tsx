@@ -15,6 +15,11 @@ import { loginWithPassword } from "@/lib/actions/auth";
 // passwords, without ever needing admin access.
 const LOGIN_FAILED_MESSAGE = "Incorrect email or password, or this account doesn't have admin access.";
 
+const ERROR_MESSAGES: Record<string, string> = {
+  "not-admin": LOGIN_FAILED_MESSAGE,
+  "password-required": "Sign in with your email and password to continue.",
+};
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -22,9 +27,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(
-    searchParams.get("error") === "not-admin" ? LOGIN_FAILED_MESSAGE : null,
-  );
+  const [error, setError] = useState<string | null>(ERROR_MESSAGES[searchParams.get("error") ?? ""] ?? null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,7 +56,7 @@ export function LoginForm() {
     const supabase = createClient();
     if (supabase) await recordLoginSession(supabase);
 
-    router.push("/dashboard");
+    router.push(outcome.next ?? "/dashboard");
     router.refresh();
   }
 

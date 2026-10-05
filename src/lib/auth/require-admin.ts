@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getLoginVerificationStatus, isLoginVerified } from "./login-verification-status";
 
 export interface CallerAdmin {
   id: string;
@@ -31,6 +32,12 @@ export async function getCallerAdmin(
     .eq("auth_user_id", user.id)
     .eq("active", true)
     .maybeSingle();
+  if (!data) return null;
+
+  // Most callers go on to use the service-role client, which skips RLS
+  // and with it is_admin()'s own Login Verification check, so this has
+  // to apply it too.
+  if (!isLoginVerified(await getLoginVerificationStatus(supabase))) return null;
 
   return data;
 }

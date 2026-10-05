@@ -5,7 +5,8 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCallerAdmin, NOT_ADMIN_ROLE_MESSAGE } from "@/lib/auth/require-admin";
-import type { PlatformSettings, SettingsSectionKey } from "@/lib/settings-schema";
+import { markCurrentSessionVerified } from "@/lib/auth/login-code";
+import type { PlatformSettings, SecuritySettings, SettingsSectionKey } from "@/lib/settings-schema";
 
 export interface ActionResult {
   ok: boolean;
@@ -51,6 +52,23 @@ export async function savePlatformSettings<K extends SettingsSectionKey>(
   const caller = await getCallerAdmin(supabase);
   if (!caller) return { ok: false, message: "You don't have admin access." };
   if (caller.role !== "admin") return NOT_ADMIN_ROLE;
+
+  if (section === "security" && (values as SecuritySettings).authentication.loginEmailCode) {
+    const { data: status, error: statusError } = await supabase.rpc("login_verification_status");
+    if (statusError) {
+      return {
+        ok: false,
+        message: "Login Verification needs supabase/proposed/009_login_verification.sql run first.",
+      };
+    }
+    // Switching it on: count the session doing the switching as verified,
+    // so this admin isn't sent to the code screen mid-change and can
+    // still switch it back off if codes turn out not to arrive.
+    if (status === "not_required") {
+      const marked = await markCurrentSessionVerified(supabase);
+      if (!marked.ok) return marked;
+    }
+  }
 
   const { error, count } = await supabase
     .from("platform_settings")

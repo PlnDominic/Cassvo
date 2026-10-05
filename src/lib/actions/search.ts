@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCallerAdmin } from "@/lib/auth/require-admin";
 import { one } from "@/lib/data/util";
 
 export interface SearchResult {
@@ -37,6 +38,8 @@ export async function searchEverything(query: string): Promise<SearchResult[]> {
 
   const supabase = await createClient();
   if (!supabase) return [];
+  // Reads profiles with the service-role key, so it must only answer admins.
+  if (!(await getCallerAdmin(supabase))) return [];
   const adminClient = createAdminClient();
 
   const [businesses, reviews, users] = await Promise.all([

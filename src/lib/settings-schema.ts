@@ -37,7 +37,8 @@ export interface NotificationSettings {
 
 export interface SecuritySettings {
   authentication: {
-    loginVerification: boolean;
+    /** Require a code emailed after each password sign-in. Enforced by supabase/proposed/009_login_verification.sql. */
+    loginEmailCode: boolean;
     sessionMonitoring: boolean;
   };
   passwordPolicy: {
@@ -86,7 +87,7 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   },
   security: {
     authentication: {
-      loginVerification: true,
+      loginEmailCode: false,
       sessionMonitoring: true,
     },
     passwordPolicy: {
@@ -128,7 +129,10 @@ export const AUTHENTICATION_LABELS: Record<
   keyof SecuritySettings["authentication"],
   { label: string; subtitle: string }
 > = {
-  loginVerification: { label: "Login Verification", subtitle: "Verify each login via email" },
+  loginEmailCode: {
+    label: "Login Verification",
+    subtitle: "After the password, admins enter a code emailed to them",
+  },
   sessionMonitoring: { label: "Session Monitoring", subtitle: "Track and monitor active sessions" },
 };
 
