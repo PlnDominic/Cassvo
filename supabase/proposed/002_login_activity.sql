@@ -21,7 +21,11 @@ comment on table login_activity is
 alter table login_activity enable row level security;
 
 -- Any active admin can see every recorded session (matches the existing
--- Settings -> Security screen, which lists everyone's sessions).
+-- Settings -> Security screen, which lists everyone's sessions). Dropped
+-- and recreated rather than a bare `create policy` so this is re-runnable
+-- against a project that already has this policy, same as the policies
+-- below it.
+drop policy if exists "Admins can view login_activity" on login_activity;
 create policy "Admins can view login_activity"
   on login_activity for select
   using (is_admin());
@@ -44,6 +48,7 @@ create policy "Admins can revoke login_activity"
 -- Any active admin, including a moderator, can revoke their own session
 -- (e.g. "sign out this device" for themselves) without needing the
 -- admin-only policy above.
+drop policy if exists "Admins can revoke their own login_activity" on login_activity;
 create policy "Admins can revoke their own login_activity"
   on login_activity for delete
   using (
@@ -54,6 +59,7 @@ create policy "Admins can revoke their own login_activity"
 -- the login flow record "I just signed in" client-side right after
 -- auth, without needing a service-role key, while still preventing one
 -- admin from fabricating a session for another.
+drop policy if exists "Admins can record their own login" on login_activity;
 create policy "Admins can record their own login"
   on login_activity for insert
   with check (
@@ -62,6 +68,7 @@ create policy "Admins can record their own login"
 
 -- An admin can update their own rows (used to flip older sessions'
 -- `current` flag to false when a new one is recorded).
+drop policy if exists "Admins can update their own login_activity" on login_activity;
 create policy "Admins can update their own login_activity"
   on login_activity for update
   using (
@@ -69,8 +76,7 @@ create policy "Admins can update their own login_activity"
   );
 
 -- =====================================================================
---  Table + RLS only. Nothing populates this table automatically yet —
---  no row is written on sign-in until the login flow is updated to
---  insert one (a follow-up code change, not part of this script). Ask
---  for that once this has been run, if you want it.
+--  Table + RLS, written to by src/lib/auth/record-login.ts on sign-in
+--  (gated by Settings -> Security's Session Monitoring toggle) and read
+--  by src/lib/data/admins.ts's getActiveSessions()/getLoginActivity().
 -- =====================================================================
