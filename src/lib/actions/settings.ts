@@ -79,6 +79,31 @@ async function getSiteOrigin() {
 }
 
 /**
+ * Looks up an existing Supabase Auth account by email - used to promote
+ * a mobile-app user to admin instead of inviting them (see inviteAdmin
+ * below). The admin Auth API has no "get user by email" endpoint in this
+ * SDK version, only paginated listUsers(), so this pages through the
+ * full user list and matches client-side. Fine at this app's scale; this
+ * only runs when an admin invite hits an already-registered email, not
+ * on every page load.
+ */
+async function findAuthUserByEmail(adminClient: ReturnType<typeof createAdminClient>, email: string) {
+  if (!adminClient) return null;
+  const perPage = 1000;
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage });
+    if (error) {
+      console.error("findAuthUserByEmail:", error.message);
+      return null;
+    }
+    const match = data.users.find((u) => u.email?.toLowerCase() === email);
+    if (match) return match;
+    if (data.users.length < perPage) return null;
+  }
+  return null;
+}
+
+/**
  * Invites a new admin: creates their Supabase Auth account (via the
  * service-role client — the anon key can't do this at all) and their
  * admin_users row together, then Supabase emails them a real "set your
@@ -91,6 +116,15 @@ async function getSiteOrigin() {
  * here in application code instead of relying on RLS. Admin-only, same
  * reasoning as savePlatformSettings above: a moderator shouldn't be able
  * to invite anyone, admin or moderator.
+ *
+ * Someone who already has a Cassvo Auth account (every mobile-app user
+ * does) can't be invited a second time - Supabase Auth rejects the
+ * duplicate signup with "already been registered" - so this is also
+ * where the dashboard's second path to admin lives: on that exact
+ * error, look the existing account up by email and attach an
+ * admin_users row to it directly instead of failing outright. No new
+ * password is set and no invite email goes out; they sign in with the
+ * password they already have, same as any other mobile-app user.
  */
 export async function inviteAdmin(input: {
   fullName: string;
@@ -126,11 +160,11 @@ export async function inviteAdmin(input: {
   });
 
   if (inviteError || !invited.user) {
+    if (inviteError?.message.includes("already been registered")) {
+      return promoteExistingUserToAdmin(adminClient, { fullName, email, role: input.role });
+    }
     console.error("inviteAdmin (auth):", inviteError?.message);
-    const message = inviteError?.message.includes("already been registered")
-      ? "An account with that email already exists."
-      : (inviteError?.message ?? "Couldn't send the invite.");
-    return { ok: false, message };
+    return { ok: false, message: inviteError?.message ?? "Couldn't send the invite." };
   }
 
   const { error } = await adminClient.from("admin_users").insert({
@@ -152,6 +186,43 @@ export async function inviteAdmin(input: {
 
   revalidatePath("/settings");
   return { ok: true, message: `Invite sent to ${email}` };
+}
+
+/**
+ * The "promotion" path inviteAdmin falls back to for an email that
+ * already has a Cassvo Auth account - see inviteAdmin's own comment for
+ * why this exists. Not exported: it's reached only through inviteAdmin,
+ * which has already done the admin-only check and the service-role
+ * client null-check this needs too.
+ */
+async function promoteExistingUserToAdmin(
+  adminClient: NonNullable<ReturnType<typeof createAdminClient>>,
+  input: { fullName: string; email: string; role: string },
+): Promise<ActionResult> {
+  const existingUser = await findAuthUserByEmail(adminClient, input.email);
+  if (!existingUser) {
+    return { ok: false, message: "An account with that email already exists, but it couldn't be found to promote." };
+  }
+
+  const { error } = await adminClient.from("admin_users").insert({
+    auth_user_id: existingUser.id,
+    full_name: input.fullName,
+    email: input.email,
+    role: input.role,
+    active: true,
+  });
+
+  if (error) {
+    console.error("promoteExistingUserToAdmin:", error.message);
+    const message = error.code === "23505" ? "An admin with that email already exists." : error.message;
+    return { ok: false, message };
+  }
+
+  revalidatePath("/settings");
+  return {
+    ok: true,
+    message: `${input.email} already had an account — granted admin access directly. They can sign in with their existing password.`,
+  };
 }
 
 /** Admin-only — a moderator shouldn't be able to remove anyone. */
