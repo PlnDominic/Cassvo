@@ -1,7 +1,8 @@
+import { TriangleAlert } from "lucide-react";
 import { ReportKindBadge } from "../report-kind-badge";
 import type { ReportDetail } from "@/lib/data/reports";
 
-export function ReportSummaryBar({ report }: { report: ReportDetail }) {
+export function ReportSummaryBar({ report, escalated }: { report: ReportDetail; escalated: boolean }) {
   return (
     <div className="flex flex-col divide-y divide-[#ececed] rounded-2xl bg-white shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)] sm:flex-row sm:divide-x sm:divide-y-0">
       <div className="flex-1 px-6 py-5">
@@ -17,6 +18,12 @@ export function ReportSummaryBar({ report }: { report: ReportDetail }) {
         <p className="text-sm font-medium text-[#060606]">
           {report.totalReports} {report.totalReports === 1 ? "Report" : "Reports"}
         </p>
+        {escalated && (
+          <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-brand-red/10 px-2.5 py-0.5 text-xs font-medium text-brand-red">
+            <TriangleAlert size={12} />
+            Escalated
+          </span>
+        )}
       </div>
     </div>
   );

@@ -14,4 +14,6 @@ export interface ReportRow {
   date: string;
   /** Raw ISO timestamp — for actual date filtering; `date` is already relative-formatted and unparseable for that. */
   createdAt: string;
+  /** How many reports the same review has in total. Null for problem reports, which have no shared target. */
+  targetReportCount: number | null;
 }

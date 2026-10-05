@@ -34,7 +34,7 @@ export async function getReports(): Promise<ReportRow[]> {
     supabase
       .from("review_reports")
       .select(
-        "id, reason, created_at, reporter_id, review:reviews!review_id (business:businesses!business_id (name))",
+        "id, review_id, reason, created_at, reporter_id, review:reviews!review_id (business:businesses!business_id (name))",
       )
       .order("created_at", { ascending: false }),
     supabase
@@ -45,6 +45,13 @@ export async function getReports(): Promise<ReportRow[]> {
 
   if (reviewReports.error) console.error("getReports (review_reports):", reviewReports.error.message);
   if (problemReports.error) console.error("getReports (problem_reports):", problemReports.error.message);
+
+  // Every review_reports row is loaded above, so this is the full count
+  // of reports per review, which is what the escalation threshold uses.
+  const reportsPerReview = new Map<string, number>();
+  for (const r of reviewReports.data ?? []) {
+    reportsPerReview.set(r.review_id, (reportsPerReview.get(r.review_id) ?? 0) + 1);
+  }
 
   const names = await resolveNames(supabase, [
     ...(reviewReports.data ?? []).map((r) => r.reporter_id),
@@ -66,6 +73,7 @@ export async function getReports(): Promise<ReportRow[]> {
           reason: row.reason,
           date: formatRelative(row.created_at),
           createdAt: row.created_at,
+          targetReportCount: reportsPerReview.get(row.review_id) ?? 1,
         } satisfies ReportRow,
       };
     }),
@@ -80,6 +88,7 @@ export async function getReports(): Promise<ReportRow[]> {
         reason: row.message,
         date: formatRelative(row.created_at),
         createdAt: row.created_at,
+        targetReportCount: null,
       } satisfies ReportRow,
     })),
   ];

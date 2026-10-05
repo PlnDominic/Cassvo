@@ -3,12 +3,13 @@ import { AdminWelcomeBanner } from "@/components/layout/admin-welcome-banner";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ReportsBoard } from "@/components/reports/reports-board";
 import { getReports, getReportCounts } from "@/lib/data/reports";
+import { getPlatformSettings } from "@/lib/data/settings";
 import { formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
-  const [reports, counts] = await Promise.all([getReports(), getReportCounts()]);
+  const [reports, counts, settings] = await Promise.all([getReports(), getReportCounts(), getPlatformSettings()]);
 
   return (
     <DashboardShell title="Report">
@@ -21,7 +22,7 @@ export default async function ReportsPage() {
           <StatCard label="Problem Reports" value={formatNumber(counts.problemReports)} iconColor="green" />
         </div>
 
-        <ReportsBoard reports={reports} />
+        <ReportsBoard reports={reports} escalationThreshold={settings.moderation.escalationThreshold} />
       </div>
     </DashboardShell>
   );

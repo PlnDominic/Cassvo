@@ -4,12 +4,18 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { ModerationBoard } from "@/components/review-moderation/moderation-board";
 import type { ModerationReview } from "@/components/review-moderation/types";
 import { getReviews, getReviewCounts } from "@/lib/data/reviews";
+import { getPlatformSettings } from "@/lib/data/settings";
+import { findDuplicateReviewIds, findRatingBurstReviewIds, type ReviewFlag } from "@/lib/moderation-risk";
 import { formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReviewModerationPage() {
-  const [records, counts] = await Promise.all([getReviews(), getReviewCounts()]);
+  const [records, counts, settings] = await Promise.all([getReviews(), getReviewCounts(), getPlatformSettings()]);
+
+  const { duplicateReviews, suspiciousRatingActivity } = settings.moderation.riskDetection;
+  const duplicateIds = duplicateReviews ? findDuplicateReviewIds(records) : new Set<string>();
+  const burstIds = suspiciousRatingActivity ? findRatingBurstReviewIds(records) : new Set<string>();
 
   const reviews: ModerationReview[] = records.map((r) => ({
     id: r.id,
@@ -31,6 +37,10 @@ export default async function ReviewModerationPage() {
     photos: r.photos,
     tags: r.tags,
     status: r.status,
+    flags: [
+      ...(duplicateIds.has(r.id) ? (["duplicate"] as ReviewFlag[]) : []),
+      ...(burstIds.has(r.id) ? (["rating-burst"] as ReviewFlag[]) : []),
+    ],
   }));
 
   return (

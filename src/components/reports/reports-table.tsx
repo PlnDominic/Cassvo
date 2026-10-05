@@ -1,8 +1,15 @@
 import Link from "next/link";
+import { TriangleAlert } from "lucide-react";
 import { ReportKindBadge } from "./report-kind-badge";
 import type { ReportRow } from "./types";
 
-export function ReportsTable({ reports }: { reports: ReportRow[] }) {
+export function ReportsTable({
+  reports,
+  isEscalated,
+}: {
+  reports: ReportRow[];
+  isEscalated: (report: ReportRow) => boolean;
+}) {
   return (
     <div className="overflow-x-auto rounded-2xl bg-white shadow-[6px_6px_54px_0px_rgba(0,0,0,0.04)]">
       <table className="w-full min-w-[720px] text-sm">
@@ -19,9 +26,17 @@ export function ReportsTable({ reports }: { reports: ReportRow[] }) {
           {reports.map((report) => (
             <tr key={report.id} className="border-b border-[#ececed] last:border-b-0">
               <td className="px-6 py-4 font-medium text-[#060606]">
-                <Link href={`/reports/${report.id}`} className="hover:text-brand-red">
-                  {report.reportedItem}
-                </Link>
+                <div className="flex flex-col items-start gap-1.5">
+                  <Link href={`/reports/${report.id}`} className="hover:text-brand-red">
+                    {report.reportedItem}
+                  </Link>
+                  {isEscalated(report) && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-brand-red/10 px-2.5 py-0.5 text-xs font-medium text-brand-red">
+                      <TriangleAlert size={12} />
+                      Escalated · {report.targetReportCount} reports
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-6 py-4">
                 <ReportKindBadge kind={report.kind} />

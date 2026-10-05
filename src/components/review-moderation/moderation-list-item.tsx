@@ -2,6 +2,7 @@ import { CheckCircle2 } from "lucide-react";
 import { tagIcon } from "../reviews/tag-icon";
 import { Avatar } from "../dashboard/avatar";
 import { ModerationStatusBadge } from "./status-badge";
+import { ReviewFlagBadges } from "./review-flag-badges";
 import type { ModerationReview } from "./types";
 
 export function ModerationListItem({
@@ -38,6 +39,12 @@ export function ModerationListItem({
       </div>
 
       <p className="mt-3 line-clamp-2 text-sm text-[#060606]">{review.text}</p>
+
+      {review.flags.length > 0 && (
+        <div className="mt-3">
+          <ReviewFlagBadges flags={review.flags} />
+        </div>
+      )}
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-3 text-xs text-[#606060]">

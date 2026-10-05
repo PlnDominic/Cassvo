@@ -50,6 +50,7 @@ export function ModerationBoard({ reviews: initialReviews }: { reviews: Moderati
       pending: reviews.filter((r) => r.status === "pending").length,
       approved: reviews.filter((r) => r.status === "approved").length,
       rejected: reviews.filter((r) => r.status === "rejected").length,
+      flagged: reviews.filter((r) => r.flags.length > 0).length,
     }),
     [reviews],
   );
@@ -62,7 +63,11 @@ export function ModerationBoard({ reviews: initialReviews }: { reviews: Moderati
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return reviews.filter((r) => {
-      if (tab !== "all" && r.status !== tab) return false;
+      if (tab === "flagged") {
+        if (r.flags.length === 0) return false;
+      } else if (tab !== "all" && r.status !== tab) {
+        return false;
+      }
       if (category !== "Category" && r.businessCategory !== category) return false;
       if (rating !== "Rating" && String(Math.round(r.rating)) !== rating.charAt(0)) return false;
       if (!withinMonth(r.createdAt, month)) return false;

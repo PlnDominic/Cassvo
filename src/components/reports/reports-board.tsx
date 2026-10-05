@@ -36,15 +36,28 @@ const TYPE_TO_KIND: Record<Exclude<ReportTypeFilter, "All Types">, ReportRow["ki
  * Moderation's own filters, filtering the already-loaded reports list
  * client-side.
  */
-export function ReportsBoard({ reports }: { reports: ReportRow[] }) {
+export function ReportsBoard({
+  reports,
+  escalationThreshold,
+}: {
+  reports: ReportRow[];
+  /** From Settings -> Moderation. Reports on a review reported this many times sort first and get an Escalated badge. */
+  escalationThreshold: number;
+}) {
   const [typeFilter, setTypeFilter] = useState<ReportTypeFilter>("All Types");
   const [dateFilter, setDateFilter] = useState<ReportDateFilter>("Filters");
 
-  const filtered = reports.filter((report) => {
-    if (typeFilter !== "All Types" && report.kind !== TYPE_TO_KIND[typeFilter]) return false;
-    if (!withinDateFilter(report.createdAt, dateFilter)) return false;
-    return true;
-  });
+  const isEscalated = (report: ReportRow) =>
+    report.targetReportCount !== null && report.targetReportCount >= escalationThreshold;
+
+  // Escalated first; Array.prototype.sort is stable, so newest-first order holds within each group.
+  const filtered = reports
+    .filter((report) => {
+      if (typeFilter !== "All Types" && report.kind !== TYPE_TO_KIND[typeFilter]) return false;
+      if (!withinDateFilter(report.createdAt, dateFilter)) return false;
+      return true;
+    })
+    .sort((a, b) => Number(isEscalated(b)) - Number(isEscalated(a)));
 
   return (
     <div className="flex flex-col gap-6">
@@ -54,7 +67,7 @@ export function ReportsBoard({ reports }: { reports: ReportRow[] }) {
         dateFilter={dateFilter}
         onDateChange={setDateFilter}
       />
-      <ReportsTable reports={filtered} />
+      <ReportsTable reports={filtered} isEscalated={isEscalated} />
     </div>
   );
 }

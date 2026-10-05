@@ -5,6 +5,8 @@ import { one } from "./util";
 
 export interface ReviewRecord {
   id: string;
+  authorId: string | null;
+  businessId: string | null;
   authorName: string;
   authorLocation: string | null;
   authorVerified: boolean;
@@ -75,6 +77,8 @@ function toRecord(row: any): ReviewRecord {
 
   return {
     id: row.id,
+    authorId: author?.id ?? null,
+    businessId: business?.id ?? null,
     authorName: author?.full_name ?? "Unknown",
     authorLocation: author?.location || null,
     // is_verified is the review's own approval flag (confirmed against

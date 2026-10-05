@@ -1,6 +1,7 @@
 import { Check, Loader2, TriangleAlert, X } from "lucide-react";
 import { Avatar } from "../dashboard/avatar";
 import { StarRating } from "../ui/star-rating";
+import { FLAG_CONFIG } from "./review-flag-badges";
 import type { ModerationReview } from "./types";
 
 export function ModerationDetailPanel({
@@ -67,6 +68,19 @@ export function ModerationDetailPanel({
           </span>
         </div>
       </div>
+
+      {review.flags.length > 0 && (
+        <div className="mt-5 flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          {review.flags.map((flag) => (
+            <p key={flag} className="flex items-start gap-2 text-sm text-amber-800">
+              <TriangleAlert size={16} className="mt-0.5 shrink-0" />
+              <span>
+                <span className="font-medium">{FLAG_CONFIG[flag].label}:</span> {FLAG_CONFIG[flag].detail}
+              </span>
+            </p>
+          ))}
+        </div>
+      )}
 
       <div className="mt-5">
         <p className="mb-2 text-xs text-[#939393]">Review</p>

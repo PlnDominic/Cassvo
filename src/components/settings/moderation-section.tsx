@@ -6,15 +6,9 @@ import { ToggleRow } from "./toggle-row";
 import { SettingsSelect } from "./settings-select";
 import { SaveChangesButton } from "./save-changes-button";
 import { savePlatformSettings } from "@/lib/actions/settings";
-import {
-  BUSINESS_VERIFICATION_LABELS,
-  ESCALATION_THRESHOLDS,
-  RISK_DETECTION_LABELS,
-  type ModerationSettings,
-} from "@/lib/settings-schema";
+import { ESCALATION_THRESHOLDS, RISK_DETECTION_LABELS, type ModerationSettings } from "@/lib/settings-schema";
 
 type RiskKey = keyof ModerationSettings["riskDetection"];
-type VerificationKey = keyof ModerationSettings["businessVerification"];
 
 export function ModerationSection({ initial }: { initial: ModerationSettings }) {
   const [values, setValues] = useState<ModerationSettings>(initial);
@@ -32,41 +26,28 @@ export function ModerationSection({ initial }: { initial: ModerationSettings }) 
     <div className="flex flex-col gap-6">
       <div>
         <p className="text-sm font-medium text-[#060606]">Moderation Settings</p>
-        <p className="text-xs text-[#939393]">Configure how reviews, reports and business submissions are handled</p>
+        <p className="text-xs text-[#939393]">Configure how reviews and reports are flagged for attention</p>
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <ToggleCard title="AI Risk Detection">
-          {(Object.keys(RISK_DETECTION_LABELS) as RiskKey[]).map((key) => (
-            <ToggleRow
-              key={key}
-              label={RISK_DETECTION_LABELS[key]}
-              checked={values.riskDetection[key]}
-              onChange={(checked) =>
-                setValues((prev) => ({ ...prev, riskDetection: { ...prev.riskDetection, [key]: checked } }))
-              }
-            />
-          ))}
-        </ToggleCard>
-        <ToggleCard title="Business Verification">
-          {(Object.keys(BUSINESS_VERIFICATION_LABELS) as VerificationKey[]).map((key) => (
-            <ToggleRow
-              key={key}
-              label={BUSINESS_VERIFICATION_LABELS[key]}
-              checked={values.businessVerification[key]}
-              onChange={(checked) =>
-                setValues((prev) => ({
-                  ...prev,
-                  businessVerification: { ...prev.businessVerification, [key]: checked },
-                }))
-              }
-            />
-          ))}
-        </ToggleCard>
-      </div>
+      <ToggleCard title="Risk Detection">
+        {(Object.keys(RISK_DETECTION_LABELS) as RiskKey[]).map((key) => (
+          <ToggleRow
+            key={key}
+            label={RISK_DETECTION_LABELS[key].label}
+            subtitle={RISK_DETECTION_LABELS[key].subtitle}
+            checked={values.riskDetection[key]}
+            onChange={(checked) =>
+              setValues((prev) => ({ ...prev, riskDetection: { ...prev.riskDetection, [key]: checked } }))
+            }
+          />
+        ))}
+      </ToggleCard>
 
       <div>
-        <p className="mb-3 text-sm font-medium text-[#060606]">Escalation</p>
+        <p className="mb-1 text-sm font-medium text-[#060606]">Escalation</p>
+        <p className="mb-3 text-xs text-[#939393]">
+          A review reported this many times is marked Escalated and moved to the top of the Reports page
+        </p>
         <SettingsSelect
           id="escalation-threshold"
           label="Report Escalation Threshold"

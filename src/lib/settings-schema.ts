@@ -4,6 +4,8 @@
  * display strings, so renaming a label in the UI never orphans saved data.
  */
 
+import { RATING_BURST_MIN_REVIEWS, RATING_BURST_WINDOW_HOURS } from "./moderation-risk";
+
 export interface GeneralSettings {
   platformName: string;
   platformDescription: string;
@@ -15,17 +17,10 @@ export interface GeneralSettings {
 
 export interface ModerationSettings {
   riskDetection: {
-    aiScreening: boolean;
     duplicateReviews: boolean;
-    spamReviews: boolean;
     suspiciousRatingActivity: boolean;
   };
-  businessVerification: {
-    requireDocuments: boolean;
-    requireProofOfAddress: boolean;
-    manualReviewNewListings: boolean;
-    autoVerifyTrustedCategories: boolean;
-  };
+  /** Review reports on one review at or above this count are marked Escalated on the Reports page. */
   escalationThreshold: number;
 }
 
@@ -81,16 +76,8 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   },
   moderation: {
     riskDetection: {
-      aiScreening: true,
       duplicateReviews: true,
-      spamReviews: true,
       suspiciousRatingActivity: true,
-    },
-    businessVerification: {
-      requireDocuments: true,
-      requireProofOfAddress: true,
-      manualReviewNewListings: true,
-      autoVerifyTrustedCategories: false,
     },
     escalationThreshold: 5,
   },
@@ -123,18 +110,18 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
 
 // ---------------------------------------------------------------- labels
 
-export const RISK_DETECTION_LABELS: Record<keyof ModerationSettings["riskDetection"], string> = {
-  aiScreening: "Enable AI Review Screening",
-  duplicateReviews: "Detect Duplicate Reviews",
-  spamReviews: "Detect Spam Reviews",
-  suspiciousRatingActivity: "Detect Suspicious Rating Activity",
-};
-
-export const BUSINESS_VERIFICATION_LABELS: Record<keyof ModerationSettings["businessVerification"], string> = {
-  requireDocuments: "Require Business Documents",
-  requireProofOfAddress: "Require Proof of Address",
-  manualReviewNewListings: "Manually Review New Listings",
-  autoVerifyTrustedCategories: "Auto-verify Trusted Categories",
+export const RISK_DETECTION_LABELS: Record<
+  keyof ModerationSettings["riskDetection"],
+  { label: string; subtitle: string }
+> = {
+  duplicateReviews: {
+    label: "Detect Duplicate Reviews",
+    subtitle: "Flag reviews where the same person posted near-identical text more than once",
+  },
+  suspiciousRatingActivity: {
+    label: "Detect Suspicious Rating Activity",
+    subtitle: `Flag reviews when a business gets ${RATING_BURST_MIN_REVIEWS}+ reviews within ${RATING_BURST_WINDOW_HOURS} hours`,
+  },
 };
 
 export const NOTIFICATION_EVENT_LABELS: Record<keyof NotificationSettings["events"], string> = {
