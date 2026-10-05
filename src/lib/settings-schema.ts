@@ -49,7 +49,6 @@ export interface NotificationSettings {
 
 export interface SecuritySettings {
   authentication: {
-    twoFactor: boolean;
     loginVerification: boolean;
     sessionMonitoring: boolean;
   };
@@ -109,7 +108,6 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   },
   security: {
     authentication: {
-      twoFactor: true,
       loginVerification: true,
       sessionMonitoring: true,
     },
@@ -164,7 +162,6 @@ export const AUTHENTICATION_LABELS: Record<
   keyof SecuritySettings["authentication"],
   { label: string; subtitle: string }
 > = {
-  twoFactor: { label: "Two Factor Authentication", subtitle: "Enable 2FA for all admin accounts" },
   loginVerification: { label: "Login Verification", subtitle: "Verify each login via email" },
   sessionMonitoring: { label: "Session Monitoring", subtitle: "Track and monitor active sessions" },
 };
