@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { TextField } from "@/components/ui/text-field";
@@ -28,6 +29,7 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(ERROR_MESSAGES[searchParams.get("error") ?? ""] ?? null);
+  const resetDone = searchParams.get("reset") === "done";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,6 +98,13 @@ export function LoginForm() {
         }
       />
 
+      <Link href="/forgot-password" className="-mt-5 self-end text-base text-white/60 hover:text-white">
+        Forgot password?
+      </Link>
+
+      {resetDone && !error && (
+        <p className="text-base font-medium text-emerald-400">Password updated. Sign in with your new password.</p>
+      )}
       {error && <p className="text-base font-medium text-brand-red">{error}</p>}
 
       <button

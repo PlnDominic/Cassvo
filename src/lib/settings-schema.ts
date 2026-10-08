@@ -146,7 +146,8 @@ export const PASSWORD_POLICY_LABELS: Record<keyof SecuritySettings["passwordPoli
  * Checks a candidate password against Settings → Security's saved
  * password policy (platform_settings.security.passwordPolicy) — the
  * only place in this app a password is ever set is
- * accept-invite-form.tsx, which uses this instead of just a fixed
+ * set-password-form.tsx (accepting an invite, or resetting a forgotten
+ * password), which uses this instead of just a fixed
  * length check. Returns the human-readable list of unmet requirements
  * (empty means the password passes); the 8-character minimum applies
  * regardless of what's toggled on.

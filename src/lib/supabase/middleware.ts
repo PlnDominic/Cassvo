@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured } from "./client";
 import { getLoginVerificationStatus, VERIFY_LOGIN_PATH } from "@/lib/auth/login-verification-status";
 
-const PUBLIC_PATHS = ["/", "/accept-invite"];
+const PUBLIC_PATHS = ["/", "/accept-invite", "/forgot-password", "/reset-password"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
@@ -86,8 +86,9 @@ export async function updateSession(request: NextRequest) {
 
     if (verification === "password_required") {
       // Signed in by an email link alone (e.g. right after accepting an
-      // invite). Left alone on public pages so the invite flow can finish
-      // setting a password; everything else goes back to the login form.
+      // invite or opening a reset link). Left alone on public pages so
+      // that flow can finish setting a password; everything else goes
+      // back to the login form.
       if (isPublicPath(pathname)) return response;
       const redirectUrl = new URL("/", request.url);
       redirectUrl.searchParams.set("error", "password-required");

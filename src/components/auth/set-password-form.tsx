@@ -1,14 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, TriangleAlert } from "lucide-react";
 import { TextField } from "@/components/ui/text-field";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { DEFAULT_SETTINGS, checkPasswordPolicy, mergeSettings, type SecuritySettings } from "@/lib/settings-schema";
 
+const COPY = {
+  invite: {
+    checking: "Verifying your invite…",
+    invalid: "This invite link is invalid or has expired.",
+    invalidHelp: "Ask an existing admin to send you a new invite from Settings.",
+    submit: "Set Password & Continue",
+  },
+  reset: {
+    checking: "Verifying your reset link…",
+    invalid: "This reset link is invalid or has expired.",
+    invalidHelp: "Request a new one below.",
+    submit: "Update Password",
+  },
+};
+
 /**
- * Landing page for the link in Supabase's invite email. The link carries
+ * Landing page for the link in Supabase's invite and password-reset
+ * emails (`mode` picks which). The link carries
  * short-lived auth tokens in the URL — as a `#access_token=...` hash
  * fragment (the implicit flow, which is what Supabase's invite email
  * actually sends), never sent to the server.
@@ -20,10 +37,11 @@ import { DEFAULT_SETTINGS, checkPasswordPolicy, mergeSettings, type SecuritySett
  * sitting right in the URL. This parses the hash directly and calls
  * setSession() with it instead, which works regardless of flow type.
  *
- * middleware.ts treats "/accept-invite" as public specifically so this
+ * middleware.ts treats "/accept-invite" and "/reset-password" as public so this
  * first, cookie-less request isn't bounced away before that can happen.
  */
-export function AcceptInviteForm() {
+export function SetPasswordForm({ mode }: { mode: "invite" | "reset" }) {
+  const copy = COPY[mode];
   const router = useRouter();
   const [status, setStatus] = useState<"checking" | "ready" | "invalid">(
     isSupabaseConfigured ? "checking" : "invalid",
@@ -112,7 +130,15 @@ export function AcceptInviteForm() {
       return;
     }
 
-    router.push("/dashboard");
+    if (mode === "reset") {
+      // The reset link's session only proves access to the inbox; signing
+      // in again with the new password is what Login Verification and the
+      // login rate limit expect.
+      await supabase.auth.signOut({ scope: "local" });
+      router.push("/?reset=done");
+    } else {
+      router.push("/dashboard");
+    }
     router.refresh();
   }
 
@@ -120,7 +146,7 @@ export function AcceptInviteForm() {
     return (
       <div className="flex items-center gap-2 text-lg text-white/70">
         <Loader2 size={18} className="animate-spin" />
-        Verifying your invite…
+        {copy.checking}
       </div>
     );
   }
@@ -130,9 +156,14 @@ export function AcceptInviteForm() {
       <div className="flex flex-col gap-3">
         <p className="flex items-center gap-2 text-lg font-medium text-brand-red">
           <TriangleAlert size={18} />
-          This invite link is invalid or has expired.
+          {copy.invalid}
         </p>
-        <p className="text-white/70">Ask an existing admin to send you a new invite from Settings.</p>
+        <p className="text-white/70">{copy.invalidHelp}</p>
+        {mode === "reset" && (
+          <Link href="/forgot-password" className="font-medium text-brand-red hover:underline">
+            Send a new reset link
+          </Link>
+        )}
       </div>
     );
   }
@@ -186,7 +217,7 @@ export function AcceptInviteForm() {
         disabled={submitting}
         className="flex h-[60px] w-full items-center justify-center rounded-[10px] border border-white/10 bg-brand-red text-2xl font-medium tracking-[0.01em] text-white disabled:opacity-70"
       >
-        {submitting ? "Saving…" : "Set Password & Continue"}
+        {submitting ? "Saving…" : copy.submit}
       </button>
     </form>
   );
