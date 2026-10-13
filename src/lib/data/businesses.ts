@@ -17,17 +17,28 @@ export async function getBusinesses(): Promise<Business[]> {
   const supabase = await createClient();
   if (!supabase) return [];
 
-  const { data, error } = await supabase
-    .from("businesses")
-    .select("id, name, is_verified, cover_image, reviews_count, category:categories(title)")
-    .order("created_at", { ascending: false });
+  // PostgREST caps a single response at 1,000 rows (Supabase default), so a
+  // plain select silently drops everything past that. Page through the table.
+  // `id` is a tiebreaker so rows sharing a created_at can't shift between pages.
+  const PAGE_SIZE = 1000;
+  const rows = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("businesses")
+      .select("id, name, is_verified, cover_image, reviews_count, category:categories(title)")
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
 
-  if (error) {
-    console.error("getBusinesses:", error.message);
-    return [];
+    if (error) {
+      console.error("getBusinesses:", error.message);
+      return [];
+    }
+    rows.push(...(data ?? []));
+    if ((data?.length ?? 0) < PAGE_SIZE) break;
   }
 
-  return (data ?? []).map((row) => ({
+  return rows.map((row) => ({
     id: row.id,
     name: row.name,
     category: one<{ title: string }>(row.category)?.title ?? "Uncategorized",
